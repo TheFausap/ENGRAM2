@@ -1,6 +1,8 @@
 import os
 import io
 import re
+import base64
+import mimetypes
 import chromadb
 import numpy as np
 
@@ -14,6 +16,7 @@ import time
 import datetime
 from html.parser import HTMLParser
 from urllib.parse import urlparse
+from PIL import Image
 
 from ui import (
     render_user_message,
@@ -32,11 +35,13 @@ SHOW_MEMORY = False
 active_lorebook = None
 
 # Constants
-OLLAMA_URL = "http://localhost:11434"
-LM_STUDIO_URL = "http://localhost:1234/v1"
+URL = "http://localhost:11434"
+URL = "http://localhost:1234/v1"
+URL = "http://localhost:8080/v1"
 MODEL = "qwen2.5:14b-instruct-q6_K"
 MODEL = "google/gemma-4-26b-a4b-qat"
 MODEL = "qwen/qwen3-coder-30b"
+MODEL = "gemma4-v2-Q8_0"
 APP_SETTINGS_FILE = "app_settings.json"
 
 def load_app_settings():
@@ -565,7 +570,7 @@ def ingest_pdf(path: str) -> dict:
 
 def generate_ollama(system_msg: str, user_input:str, model: str = MODEL) -> str:
     response = requests.post(
-        OLLAMA_URL+"/api/chat",
+        URL+"/api/chat",
         json={
             "model": model,
             "messages": [
@@ -581,7 +586,7 @@ def generate_ollama(system_msg: str, user_input:str, model: str = MODEL) -> str:
 def generate(system_msg: str, user_input: str, model: str = MODEL) -> str:
     try:
         response = requests.post(
-            f"{LM_STUDIO_URL}/chat/completions",
+            f"{URL}/chat/completions",
             json={
                 "model": model,
                 "messages": [
@@ -598,6 +603,76 @@ def generate(system_msg: str, user_input: str, model: str = MODEL) -> str:
         return data['choices'][0]['message']['content']
     except Exception as e:
         return f"Error connecting to LM Studio: {e}"
+
+def image_to_data_url(path: str) -> tuple[str, dict]:
+    if not os.path.isfile(path):
+        raise FileNotFoundError(f"Image not found: {path}")
+
+    mime_type, _ = mimetypes.guess_type(path)
+    if mime_type not in ("image/png", "image/jpeg", "image/webp", "image/gif"):
+        raise ValueError("Supported image formats are PNG, JPEG, WebP, and GIF.")
+
+    with Image.open(path) as image:
+        metadata = {
+            "path": path,
+            "filename": os.path.basename(path),
+            "format": image.format,
+            "width": image.width,
+            "height": image.height,
+            "mode": image.mode,
+            "mime_type": mime_type,
+        }
+
+    with open(path, "rb") as f:
+        encoded = base64.b64encode(f.read()).decode("ascii")
+
+    return f"data:{mime_type};base64,{encoded}", metadata
+
+def analyze_image(path: str, question: str = "", model: str = MODEL) -> dict:
+    data_url, metadata = image_to_data_url(path)
+    prompt = question.strip() or (
+        "Read this image carefully. If it is a graph or chart, describe the axes, title, "
+        "visible trends, important values, anomalies, and any caveats. If text is visible, "
+        "transcribe the most relevant parts."
+    )
+    system_msg = (
+        "You are analyzing an image supplied by the user. Be concrete and visual. "
+        "Do not invent labels or values that are not visible; say when something is unreadable."
+    )
+
+    try:
+        response = requests.post(
+            f"{LM_STUDIO_URL}/chat/completions",
+            json={
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": system_msg},
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {"type": "image_url", "image_url": {"url": data_url}},
+                        ],
+                    },
+                ],
+                "temperature": 0.2,
+                "stream": False,
+            },
+            timeout=300,
+        )
+        response.raise_for_status()
+        data = response.json()
+        analysis = data["choices"][0]["message"]["content"]
+    except Exception as e:
+        analysis = (
+            "Image analysis failed. The current LM Studio model may not support vision/image input, "
+            f"or LM Studio rejected the image payload. Error: {e}"
+        )
+
+    return {
+        "analysis": analysis,
+        "metadata": metadata,
+    }
 
 def store_episodic(text: str, vector: list[float], metadata=None):
     meta = dict(metadata) if metadata else {}
@@ -1230,6 +1305,20 @@ def handle_command(user_input: str):
             )
         except Exception as e:
             render_system_message(f"PDF ingest error: {e}")
+        return
+
+    if user_input.startswith("/image read "):
+        raw = user_input.replace("/image read ", "", 1).strip()
+        path, sep, question = raw.partition(" :: ")
+        try:
+            result = analyze_image(path.strip(), question.strip())
+            meta = result["metadata"]
+            render_system_message(
+                f"Image read: {meta['filename']} ({meta['width']}x{meta['height']}, {meta['format']})\n\n"
+                f"{result['analysis']}"
+            )
+        except Exception as e:
+            render_system_message(f"Image read error: {e}")
         return
 
     if user_input == "/teach":

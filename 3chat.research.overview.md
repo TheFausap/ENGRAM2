@@ -61,6 +61,7 @@ The graphical PoC includes:
 - A **Memory** selector for episodic, semantic, and procedural memories.
 - A **Show** button that displays stored memory entries with partial content, metadata, and the first few vector dimensions.
 - A **Knowledge** panel that can fetch a specific URL, ingest a URL into semantic memory, or ingest a local PDF path into semantic memory.
+- An image-reading control that sends a local PNG/JPEG/WebP/GIF to LM Studio using the OpenAI-style image message format. This requires the currently loaded local model to support image input.
 - Markdown rendering for assistant replies, including lists, code blocks, tables, and blockquotes.
 - LaTeX math rendering for expressions enclosed in `$...$` or `$$...$$`.
 - A **Reset** button that backs up the current state, history, and memory database under `backups/`, then clears active memories and conversation state while keeping the current character, user, prompt, and greeting.
@@ -76,6 +77,7 @@ The file depends on several external tools and libraries:
 - **DuckDuckGo search through `ddgs`**: Used for web lookups.
 - **Requests plus an HTML text extractor**: Used to fetch and read a specific URL supplied by the user.
 - **pypdf**: Used to extract text from PDF files for ingestion.
+- **Pillow**: Used to validate image files and read basic image metadata before sending images to a vision-capable local model.
 - **A local `ui.py` module**: Handles formatted output for user messages, assistant messages, memory blocks, and system messages.
 
 ## Character and User Settings

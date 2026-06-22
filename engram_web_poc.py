@@ -39,6 +39,7 @@ Buttons:
 - Knowledge > Fetch URL: read a specific web page or PDF URL without storing it.
 - Knowledge > Ingest URL: store extracted page/PDF URL text as semantic memory chunks.
 - Knowledge > Ingest PDF: store extracted local PDF text as semantic memory chunks.
+- Knowledge > Read Image: analyze a local PNG/JPEG/WebP/GIF through the current LM Studio model.
 
 Message box shortcuts:
 - Enter: send.
@@ -54,6 +55,7 @@ Supported slash commands in this web PoC:
 - /url fetch <url>: read a specific web page or PDF URL without storing it.
 - /url ingest <url>: store extracted page/PDF URL text as semantic memory chunks.
 - /pdf ingest <path>: store extracted local PDF text as semantic memory chunks.
+- /image read <path> [:: question]: analyze a local image, optionally with a specific question.
 - /quit or /exit: save state; stop the server with Ctrl+C in the terminal when finished.
 
 The original terminal app supports additional commands such as /prompt, /greeting, /lorebook, /ingest, /teach, and /skill. Those remain available when running 3chat.research.py directly."""
@@ -602,6 +604,9 @@ HTML = r"""<!doctype html>
           </div>
           <input type="text" id="pdfPathInput" placeholder="/absolute/path/to/document.pdf">
           <button id="ingestPdf">Ingest PDF</button>
+          <input type="text" id="imagePathInput" placeholder="/absolute/path/to/graph.png">
+          <input type="text" id="imageQuestionInput" placeholder="Optional image question">
+          <button id="readImage">Read Image</button>
         </div>
       </div>
 
@@ -624,9 +629,12 @@ HTML = r"""<!doctype html>
     const memoryList = document.getElementById("memoryList");
     const urlInput = document.getElementById("urlInput");
     const pdfPathInput = document.getElementById("pdfPathInput");
+    const imagePathInput = document.getElementById("imagePathInput");
+    const imageQuestionInput = document.getElementById("imageQuestionInput");
     const fetchUrlButton = document.getElementById("fetchUrl");
     const ingestUrlButton = document.getElementById("ingestUrl");
     const ingestPdfButton = document.getElementById("ingestPdf");
+    const readImageButton = document.getElementById("readImage");
     const statusEl = document.getElementById("status");
     const memoryToggle = document.getElementById("memoryToggle");
 
@@ -899,6 +907,31 @@ HTML = r"""<!doctype html>
       }
     }
 
+    async function readImagePath(path = imagePathInput.value.trim(), question = imageQuestionInput.value.trim()) {
+      if (!path) {
+        addMessage("system", "Enter a local image path first.");
+        return;
+      }
+      setBusy(true);
+      try {
+        const payload = await postJson("/api/image/read", { path, question });
+        const meta = payload.metadata || {};
+        addMessage(
+          "assistant",
+          payload.analysis,
+          payload.analysis_html || null
+        );
+        addMessage(
+          "system",
+          `Image metadata: ${meta.filename || path} | ${meta.width || "?"}x${meta.height || "?"} | ${meta.format || "unknown"}`
+        );
+      } catch (error) {
+        addMessage("system", String(error));
+      } finally {
+        setBusy(false);
+      }
+    }
+
     async function resetEverything() {
       const confirmed = window.confirm(
         "Back up and clear active conversation history, state, and all three memory collections? Character, user, prompt, and greeting settings will be kept."
@@ -979,8 +1012,14 @@ HTML = r"""<!doctype html>
         await ingestPdfPath(text.replace(/^\/pdf ingest\s+/i, "").trim());
         return true;
       }
+      if (command.startsWith("/image read ")) {
+        const raw = text.replace(/^\/image read\s+/i, "").trim();
+        const parts = raw.split(/\s+::\s+/);
+        await readImagePath(parts[0]?.trim() || "", parts.slice(1).join(" :: ").trim());
+        return true;
+      }
       if (command.startsWith("/")) {
-        addMessage("system", "This browser PoC supports /memory on, /memory off, /diagnostics, /help, /save, /reset, /url fetch <url>, /url ingest <url>, /pdf ingest <path>, /quit, and /exit. Use the terminal version for prompt, lorebook, teach, and skill commands.");
+        addMessage("system", "This browser PoC supports /memory on, /memory off, /diagnostics, /help, /save, /reset, /url fetch <url>, /url ingest <url>, /pdf ingest <path>, /image read <path> [:: question], /quit, and /exit. Use the terminal version for prompt, lorebook, teach, and skill commands.");
         return true;
       }
       return false;
@@ -1040,6 +1079,7 @@ HTML = r"""<!doctype html>
     fetchUrlButton.addEventListener("click", () => fetchSpecificUrl());
     ingestUrlButton.addEventListener("click", () => ingestSpecificUrl());
     ingestPdfButton.addEventListener("click", () => ingestPdfPath());
+    readImageButton.addEventListener("click", () => readImagePath());
 
     message.addEventListener("keydown", (event) => {
       if (event.key === "Enter" && !event.shiftKey) {
@@ -1146,6 +1186,14 @@ class EngineBridge:
         with self.lock:
             result = self.engine.ingest_pdf(path)
             return {**result, "path": path, "state": self.state()}
+
+    def read_image(self, path: str, question: str = ""):
+        with self.lock:
+            result = self.engine.analyze_image(path, question)
+            return {
+                **result,
+                "analysis_html": render_model_text(result.get("analysis", "")),
+            }
 
     def reset_all(self):
         with self.lock:
@@ -1337,6 +1385,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/pdf/ingest":
             self._handle_pdf_ingest()
             return
+        if path == "/api/image/read":
+            self._handle_image_read()
+            return
         if path == "/api/reset":
             try:
                 self._send_json(self.bridge.reset_all())
@@ -1387,6 +1438,18 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"error": "PDF path is empty."}, status=400)
                 return
             self._send_json(self.bridge.ingest_pdf(path))
+        except Exception as exc:
+            self._send_json({"error": str(exc)}, status=500)
+
+    def _handle_image_read(self):
+        try:
+            payload = self._read_json()
+            path = str(payload.get("path", "")).strip()
+            question = str(payload.get("question", "")).strip()
+            if not path:
+                self._send_json({"error": "Image path is empty."}, status=400)
+                return
+            self._send_json(self.bridge.read_image(path, question))
         except Exception as exc:
             self._send_json({"error": str(exc)}, status=500)
 

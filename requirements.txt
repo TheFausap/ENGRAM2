@@ -17,3 +17,6 @@ pylatexenc
 
 # PDF knowledge ingestion
 pypdf
+
+# Image validation/metadata for vision-model analysis
+Pillow

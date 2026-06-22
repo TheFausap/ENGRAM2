@@ -4,24 +4,24 @@
     "SHOW_MEMORY": false,
     "active_lorebook": null,
     "affect": {
-        "curiosity": 0.11809800000000004,
+        "curiosity": 0.2860934420000001,
         "concern": 0.0,
-        "calm": 1.0,
-        "focus": 0.5659081523200002,
+        "calm": 0.95,
+        "focus": 0.7713218873137565,
         "amusement": 0.0,
         "unease": 0.0,
-        "trust": 0.3,
-        "warmth": 0.20950118882812493,
-        "vulnerability": 0.04782969000000002
+        "trust": 0.21999999999999997,
+        "warmth": 0.1796210817715136,
+        "vulnerability": 0.03486784401000002
     },
     "relationship": {
-        "familiarity": 0.17000000000000004,
-        "closeness": 0.14,
-        "boundary_sensitivity": 0.5,
-        "repair_need": 0.0,
+        "familiarity": 0.20000000000000007,
+        "closeness": 0.15000000000000002,
+        "boundary_sensitivity": 0.58,
+        "repair_need": 0.30250000000000005,
         "shared_humor": 0.0,
         "preferred_detail": "balanced",
-        "preferred_mode": "adaptive",
-        "last_user_tone": "curious"
+        "preferred_mode": "direct",
+        "last_user_tone": "repair"
     }
 }
