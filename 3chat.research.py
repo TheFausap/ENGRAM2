@@ -642,7 +642,7 @@ def analyze_image(path: str, question: str = "", model: str = MODEL) -> dict:
 
     try:
         response = requests.post(
-            f"{LM_STUDIO_URL}/chat/completions",
+            f"{URL}/chat/completions",
             json={
                 "model": model,
                 "messages": [
@@ -1612,7 +1612,7 @@ def generate_search_query(user_input: str) -> str:
 def generate_with_history(system_msg: str, messages: list[dict], model: str = MODEL) -> str:
     try:
         response = requests.post(
-            f"{LM_STUDIO_URL}/chat/completions",
+            f"{URL}/chat/completions",
             json={
                 "model": model,
                 "messages": [{"role": "system", "content": system_msg}] + messages,
