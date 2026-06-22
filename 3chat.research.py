@@ -34,8 +34,9 @@ active_lorebook = None
 # Constants
 OLLAMA_URL = "http://localhost:11434"
 LM_STUDIO_URL = "http://localhost:1234/v1"
-#MODEL = "qwen2.5:14b-instruct-q6_K"
+MODEL = "qwen2.5:14b-instruct-q6_K"
 MODEL = "google/gemma-4-26b-a4b-qat"
+MODEL = "qwen/qwen3-coder-30b"
 APP_SETTINGS_FILE = "app_settings.json"
 
 def load_app_settings():
