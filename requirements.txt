@@ -1,0 +1,19 @@
+# Core memory and embedding stack
+chromadb
+sentence-transformers
+numpy
+
+# Local model/web access
+requests
+ddgs
+
+# Terminal UI rendering
+rich
+
+# Markdown and math rendering
+Markdown
+latex2mathml
+pylatexenc
+
+# PDF knowledge ingestion
+pypdf

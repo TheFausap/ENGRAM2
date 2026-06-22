@@ -1,0 +1,15 @@
+{
+    "current_prompt_path": "default.md",
+    "current_greeting_path": "default.txt",
+    "SHOW_MEMORY": false,
+    "active_lorebook": null,
+    "affect": {
+        "curiosity": 0.0,
+        "concern": 0.0,
+        "calm": 1.0,
+        "focus": 0.5,
+        "amusement": 0.0,
+        "unease": 0.0,
+        "trust": 0.3
+    }
+}

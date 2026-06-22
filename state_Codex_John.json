@@ -1,0 +1,27 @@
+{
+    "current_prompt_path": "codex.txt",
+    "current_greeting_path": "codex.txt",
+    "SHOW_MEMORY": false,
+    "active_lorebook": null,
+    "affect": {
+        "curiosity": 0.11809800000000004,
+        "concern": 0.0,
+        "calm": 1.0,
+        "focus": 0.5659081523200002,
+        "amusement": 0.0,
+        "unease": 0.0,
+        "trust": 0.3,
+        "warmth": 0.20950118882812493,
+        "vulnerability": 0.04782969000000002
+    },
+    "relationship": {
+        "familiarity": 0.17000000000000004,
+        "closeness": 0.14,
+        "boundary_sensitivity": 0.5,
+        "repair_need": 0.0,
+        "shared_humor": 0.0,
+        "preferred_detail": "balanced",
+        "preferred_mode": "adaptive",
+        "last_user_tone": "curious"
+    }
+}
