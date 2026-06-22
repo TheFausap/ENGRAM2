@@ -35,8 +35,8 @@ SHOW_MEMORY = False
 active_lorebook = None
 
 # Constants
-URL = "http://localhost:11434"      # OLLAMA
-URL = "http://localhost:1234/v1"    # LMSTUDIO
+URL = "http://localhost:11434"       # OLLAMA
+URL = "http://localhost:41343/v1"    # LMSTER / LMSTUDIO
 MODEL = "qwen2.5:14b-instruct-q6_K"
 MODEL = "google/gemma-4-26b-a4b-qat"
 MODEL = "qwen/qwen3-coder-30b"
