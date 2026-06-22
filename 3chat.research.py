@@ -35,13 +35,12 @@ SHOW_MEMORY = False
 active_lorebook = None
 
 # Constants
-URL = "http://localhost:11434"
-URL = "http://localhost:1234/v1"
-URL = "http://localhost:8080/v1"
+URL = "http://localhost:11434"      # OLLAMA
+URL = "http://localhost:1234/v1"    # LMSTUDIO
 MODEL = "qwen2.5:14b-instruct-q6_K"
 MODEL = "google/gemma-4-26b-a4b-qat"
 MODEL = "qwen/qwen3-coder-30b"
-MODEL = "gemma4-v2-Q8_0"
+MODEL = "gemma-4-12b-agentic-fable5-composer2.5-v2-3.5x-tau2"
 APP_SETTINGS_FILE = "app_settings.json"
 
 def load_app_settings():
