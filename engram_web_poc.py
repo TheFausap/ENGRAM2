@@ -39,6 +39,7 @@ Buttons:
 - Knowledge > Fetch URL: read a specific web page or PDF URL without storing it.
 - Knowledge > Ingest URL: store extracted page/PDF URL text as semantic memory chunks.
 - Knowledge > Ingest PDF: store extracted local PDF text as semantic memory chunks.
+- Knowledge > Ingest Text / Code: select a local text or source-code file and store it as semantic memory chunks.
 - Knowledge > Read Image: analyze a local PNG/JPEG/WebP/GIF through the current LM Studio model.
 
 Message box shortcuts:
@@ -55,6 +56,7 @@ Supported slash commands in this web PoC:
 - /url fetch <url>: read a specific web page or PDF URL without storing it.
 - /url ingest <url>: store extracted page/PDF URL text as semantic memory chunks.
 - /pdf ingest <path>: store extracted local PDF text as semantic memory chunks.
+- /text ingest <path>: store a local text or source-code file as semantic memory chunks.
 - /image read <path> [:: question]: analyze a local image, optionally with a specific question.
 - /quit or /exit: save state; stop the server with Ctrl+C in the terminal when finished.
 
@@ -568,7 +570,7 @@ HTML = r"""<!doctype html>
       margin-top: 10px;
     }
 
-    select, input[type="text"] {
+    select, input[type="text"], input[type="file"] {
       min-height: 38px;
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -719,6 +721,8 @@ HTML = r"""<!doctype html>
           </div>
           <input type="text" id="pdfPathInput" placeholder="/absolute/path/to/document.pdf">
           <button id="ingestPdf">Ingest PDF</button>
+          <input type="file" id="textFileInput" accept=".txt,.md,.rst,.log,.csv,.tsv,.py,.pyw,.ipynb,.js,.jsx,.mjs,.cjs,.ts,.tsx,.java,.kt,.kts,.go,.rs,.rb,.php,.c,.h,.cc,.cpp,.cxx,.hpp,.cs,.swift,.scala,.sh,.bash,.zsh,.fish,.ps1,.html,.htm,.css,.scss,.sass,.less,.json,.jsonl,.yaml,.yml,.toml,.ini,.cfg,.conf,.sql,.xml,.graphql,.gql,.lua,.r,.m">
+          <button id="ingestTextFile">Ingest Text / Code</button>
           <input type="text" id="imagePathInput" placeholder="/absolute/path/to/graph.png">
           <input type="text" id="imageQuestionInput" placeholder="Optional image question">
           <button id="readImage">Read Image</button>
@@ -744,11 +748,13 @@ HTML = r"""<!doctype html>
     const memoryList = document.getElementById("memoryList");
     const urlInput = document.getElementById("urlInput");
     const pdfPathInput = document.getElementById("pdfPathInput");
+    const textFileInput = document.getElementById("textFileInput");
     const imagePathInput = document.getElementById("imagePathInput");
     const imageQuestionInput = document.getElementById("imageQuestionInput");
     const fetchUrlButton = document.getElementById("fetchUrl");
     const ingestUrlButton = document.getElementById("ingestUrl");
     const ingestPdfButton = document.getElementById("ingestPdf");
+    const ingestTextFileButton = document.getElementById("ingestTextFile");
     const readImageButton = document.getElementById("readImage");
     const statusEl = document.getElementById("status");
     const memoryToggle = document.getElementById("memoryToggle");
@@ -1055,6 +1061,38 @@ HTML = r"""<!doctype html>
       }
     }
 
+    async function ingestSelectedTextFile() {
+      const file = textFileInput.files?.[0];
+      if (!file) {
+        addMessage("system", "Select a text or source-code file first.");
+        return;
+      }
+      if (file.size > 5_000_000) {
+        addMessage("system", "The selected file is too large. The limit is 5 MB.");
+        return;
+      }
+
+      setBusy(true);
+      try {
+        const content = await file.text();
+        const payload = await postJson("/api/text/ingest", {
+          filename: file.name,
+          content,
+        });
+        addMessage(
+          "system",
+          `Ingested text/code file into semantic memory.\nFile: ${payload.filename}\nLanguage: ${payload.language}\nChunks stored: ${payload.chunks}\nCharacters processed: ${payload.characters}`
+        );
+        textFileInput.value = "";
+        renderState(payload.state);
+        fetchMemory();
+      } catch (error) {
+        addMessage("system", String(error));
+      } finally {
+        setBusy(false);
+      }
+    }
+
     async function readImagePath(path = imagePathInput.value.trim(), question = imageQuestionInput.value.trim()) {
       if (!path) {
         addMessage("system", "Enter a local image path first.");
@@ -1160,6 +1198,10 @@ HTML = r"""<!doctype html>
         await ingestPdfPath(text.replace(/^\/pdf ingest\s+/i, "").trim());
         return true;
       }
+      if (command.startsWith("/text ingest ")) {
+        addMessage("system", "Use the Text / Code file picker in the Knowledge panel for browser ingestion. The path-based /text command is available in the terminal app.");
+        return true;
+      }
       if (command.startsWith("/image read ")) {
         const raw = text.replace(/^\/image read\s+/i, "").trim();
         const parts = raw.split(/\s+::\s+/);
@@ -1167,7 +1209,7 @@ HTML = r"""<!doctype html>
         return true;
       }
       if (command.startsWith("/")) {
-        addMessage("system", "This browser PoC supports /memory on, /memory off, /diagnostics, /help, /save, /reset, /url fetch <url>, /url ingest <url>, /pdf ingest <path>, /image read <path> [:: question], /quit, and /exit. Use the terminal version for prompt, lorebook, teach, and skill commands.");
+        addMessage("system", "This browser PoC supports /memory on, /memory off, /diagnostics, /help, /save, /reset, /url fetch <url>, /url ingest <url>, /pdf ingest <path>, /text ingest <path>, /image read <path> [:: question], /quit, and /exit. Use the Text / Code file picker for browser ingestion and the terminal version for prompt, lorebook, teach, and skill commands.");
         return true;
       }
       return false;
@@ -1227,6 +1269,7 @@ HTML = r"""<!doctype html>
     fetchUrlButton.addEventListener("click", () => fetchSpecificUrl());
     ingestUrlButton.addEventListener("click", () => ingestSpecificUrl());
     ingestPdfButton.addEventListener("click", () => ingestPdfPath());
+    ingestTextFileButton.addEventListener("click", ingestSelectedTextFile);
     readImageButton.addEventListener("click", () => readImagePath());
 
     message.addEventListener("keydown", (event) => {
@@ -1334,6 +1377,11 @@ class EngineBridge:
         with self.lock:
             result = self.engine.ingest_pdf(path)
             return {**result, "path": path, "state": self.state()}
+
+    def ingest_text(self, filename: str, content: str):
+        with self.lock:
+            result = self.engine.ingest_text_content(content, filename)
+            return {**result, "state": self.state()}
 
     def read_image(self, path: str, question: str = ""):
         with self.lock:
@@ -1533,6 +1581,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/pdf/ingest":
             self._handle_pdf_ingest()
             return
+        if path == "/api/text/ingest":
+            self._handle_text_ingest()
+            return
         if path == "/api/image/read":
             self._handle_image_read()
             return
@@ -1586,6 +1637,23 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"error": "PDF path is empty."}, status=400)
                 return
             self._send_json(self.bridge.ingest_pdf(path))
+        except Exception as exc:
+            self._send_json({"error": str(exc)}, status=500)
+
+    def _handle_text_ingest(self):
+        try:
+            payload = self._read_json()
+            filename = str(payload.get("filename", "")).strip()
+            content = str(payload.get("content", ""))
+            if not filename:
+                self._send_json({"error": "Text/code filename is empty."}, status=400)
+                return
+            if not content.strip():
+                self._send_json({"error": "Text/code file content is empty."}, status=400)
+                return
+            self._send_json(self.bridge.ingest_text(filename, content))
+        except ValueError as exc:
+            self._send_json({"error": str(exc)}, status=400)
         except Exception as exc:
             self._send_json({"error": str(exc)}, status=500)
 

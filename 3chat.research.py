@@ -67,6 +67,18 @@ IMP_THRESHOLD = 0.60
 URL_CONTEXT_LIMIT = 12000
 INGEST_CHUNK_CHARS = 1200
 INGEST_CHUNK_OVERLAP = 160
+MAX_TEXT_INGEST_CHARS = 5_000_000
+TEXT_FILE_EXTENSIONS = {
+    ".txt", ".md", ".rst", ".log", ".csv", ".tsv",
+    ".py", ".pyw", ".ipynb",
+    ".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx",
+    ".java", ".kt", ".kts", ".go", ".rs", ".rb", ".php",
+    ".c", ".h", ".cc", ".cpp", ".cxx", ".hpp",
+    ".cs", ".swift", ".scala", ".sh", ".bash", ".zsh", ".fish", ".ps1",
+    ".html", ".htm", ".css", ".scss", ".sass", ".less",
+    ".json", ".jsonl", ".yaml", ".yml", ".toml", ".ini", ".cfg", ".conf",
+    ".sql", ".xml", ".graphql", ".gql", ".lua", ".r", ".m",
+}
 turn = 0
 
 class PageTextExtractor(HTMLParser):
@@ -569,6 +581,68 @@ def ingest_pdf(path: str) -> dict:
             "document_kind": "pdf",
         }
     )
+
+def text_file_language(filename: str) -> str:
+    extension = os.path.splitext(filename)[1].lower()
+    languages = {
+        ".py": "python", ".pyw": "python", ".ipynb": "python-notebook",
+        ".js": "javascript", ".jsx": "javascript", ".mjs": "javascript", ".cjs": "javascript",
+        ".ts": "typescript", ".tsx": "typescript",
+        ".java": "java", ".kt": "kotlin", ".kts": "kotlin",
+        ".go": "go", ".rs": "rust", ".rb": "ruby", ".php": "php",
+        ".c": "c", ".h": "c", ".cc": "cpp", ".cpp": "cpp", ".cxx": "cpp", ".hpp": "cpp",
+        ".cs": "csharp", ".swift": "swift", ".scala": "scala",
+        ".sh": "shell", ".bash": "shell", ".zsh": "shell", ".fish": "shell", ".ps1": "powershell",
+        ".html": "html", ".htm": "html", ".css": "css", ".scss": "scss", ".sass": "sass",
+        ".json": "json", ".jsonl": "jsonl", ".yaml": "yaml", ".yml": "yaml", ".toml": "toml",
+        ".sql": "sql", ".xml": "xml", ".graphql": "graphql", ".gql": "graphql",
+        ".lua": "lua", ".r": "r", ".m": "matlab",
+        ".md": "markdown", ".rst": "restructuredtext",
+    }
+    return languages.get(extension, "text")
+
+def ingest_text_content(text: str, filename: str, source: str = "") -> dict:
+    filename = os.path.basename(filename.strip()) or "uploaded.txt"
+    extension = os.path.splitext(filename)[1].lower()
+    if extension not in TEXT_FILE_EXTENSIONS:
+        raise ValueError(f"Unsupported text/code file extension: {extension or '(none)'}")
+    if not text.strip():
+        raise ValueError("The selected text/code file is empty.")
+    if len(text) > MAX_TEXT_INGEST_CHARS:
+        raise ValueError(
+            f"Text/code file is too large. Maximum size is {MAX_TEXT_INGEST_CHARS:,} characters."
+        )
+
+    language = text_file_language(filename)
+    text_document_extensions = {
+        ".txt", ".md", ".rst", ".log", ".csv", ".tsv",
+        ".json", ".jsonl", ".yaml", ".yml", ".toml", ".ini", ".cfg", ".conf",
+        ".xml",
+    }
+    result = ingest_knowledge_text(
+        text,
+        source=source or f"text-file:{filename}",
+        metadata={
+            "title": filename,
+            "filename": filename,
+            "extension": extension,
+            "language": language,
+            "document_kind": "text" if extension in text_document_extensions else "source_code",
+        },
+    )
+    return {
+        **result,
+        "filename": filename,
+        "extension": extension,
+        "language": language,
+    }
+
+def ingest_text_file(path: str) -> dict:
+    if not os.path.isfile(path):
+        raise FileNotFoundError(f"Text/code file not found: {path}")
+    with open(path, "r", encoding="utf-8", errors="replace") as file:
+        text = file.read(MAX_TEXT_INGEST_CHARS + 1)
+    return ingest_text_content(text, os.path.basename(path), source=f"text-file:{path}")
 
 def generate_ollama(system_msg: str, user_input:str, model: str = MODEL) -> str:
     response = requests.post(
@@ -1385,6 +1459,21 @@ def handle_command(user_input: str):
             )
         except Exception as e:
             render_system_message(f"PDF ingest error: {e}")
+        return
+
+    if user_input.startswith("/text ingest "):
+        path = user_input.replace("/text ingest ", "").strip()
+        try:
+            result = ingest_text_file(path)
+            render_system_message(
+                f"Ingested text/code file into semantic memory.\n"
+                f"Path: {path}\n"
+                f"Language: {result['language']}\n"
+                f"Chunks stored: {result['chunks']}\n"
+                f"Characters processed: {result['characters']}"
+            )
+        except Exception as e:
+            render_system_message(f"Text/code ingest error: {e}")
         return
 
     if user_input.startswith("/image read "):
