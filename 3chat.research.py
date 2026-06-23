@@ -356,6 +356,7 @@ def conversational_behavior_directive(user_input: str) -> str:
 {repair_line}
 {pacing_line}
 - Curiosity: Ask no more than one follow-up question unless the user explicitly invites exploration.
+- Code Delivery: If the user asks for code, a script, a patch, or an implementation, include the actual code or concrete patch in this same response. Do not say you will provide code later.
 - Boundaries: If uncertainty, discomfort, or high-stakes factual claims appear, slow down and make uncertainty visible.
 """.strip()
 
@@ -996,6 +997,7 @@ Task: Evaluate the following exchange for quality, character consistency, and ac
 
 Identify any issues (hallucinations, logic errors, or character breaks). 
 Then, provide an improved version of the reply that is 100% in-character as {CHAR_NAME}.
+If the user requested code, a script, or an implementation, the IMPROVED section must include the concrete code artifact in the same answer.
 
 Return your answer in this EXACT format. Do NOT add any parenthetical notes, meta-commentary, or descriptions of your changes inside the IMPROVED section.
 CRITIQUE: <your critique>
@@ -1031,6 +1033,83 @@ def process_self_critique(critique: str, improved: str):
             embed(improved),
             metadata={"type": "improved_answer"}
         )
+
+def user_requested_code(user_input: str) -> bool:
+    text = user_input.lower()
+    code_markers = (
+        "code",
+        "script",
+        "function",
+        "class",
+        "implement",
+        "write a program",
+        "write me",
+        "notebook",
+        "python",
+        "torch",
+        "transformers",
+        "plt.",
+        "matplotlib",
+        "patch",
+    )
+    return any(marker in text for marker in code_markers)
+
+def reply_has_code_artifact(reply: str) -> bool:
+    if "```" in reply:
+        return True
+    code_like_lines = 0
+    for line in reply.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if re.match(r"(import |from |def |class |for |while |if __name__|[A-Za-z_][\w_]*\s*=|plt\.|torch\.|model\.)", stripped):
+            code_like_lines += 1
+    return code_like_lines >= 3
+
+def reply_promises_code_without_artifact(reply: str) -> bool:
+    text = reply.lower()
+    promise_markers = (
+        "i'll give you",
+        "i will give you",
+        "here is a script",
+        "here's a script",
+        "self-contained script",
+        "paste the output",
+        "run it on your machine",
+        "the code below",
+        "script with",
+    )
+    return any(marker in text for marker in promise_markers) and not reply_has_code_artifact(reply)
+
+def needs_code_repair(user_input: str, reply: str) -> bool:
+    return user_requested_code(user_input) and not reply_has_code_artifact(reply) and reply_promises_code_without_artifact(reply)
+
+def repair_missing_code_reply(user_input: str, reply: str, context: str = "") -> str:
+    system_message = f"""
+{SYSTEM_PROMPT}
+
+[INTERNAL PROTOCOL ACTIVE: Missing Code Repair]
+The previous answer promised or implied code, but did not include a concrete code artifact.
+Produce a corrected answer that satisfies the user's request now.
+"""
+    user_content = f"""
+User request:
+{user_input}
+
+Previous incomplete answer:
+{reply}
+
+Relevant context:
+{context}
+
+Requirements:
+- Include the actual code in this response if code, a script, or an implementation is requested.
+- Prefer a complete fenced code block with the correct language tag.
+- Do not say you will provide code later.
+- Keep any explanation brief and put the code in the same answer.
+"""
+    repaired = generate(system_message, user_content).strip()
+    return repaired or reply
 
 def detect_procedure(text: str) -> bool:
     now = datetime.datetime.now()
@@ -1741,6 +1820,14 @@ def chat(user_input: str, turn: int) -> str:
     if final_reply != reply and CONVERSATION_HISTORY:
         CONVERSATION_HISTORY[-1]["content"] = final_reply
     process_self_critique(critique, improved)
+
+    if needs_code_repair(user_input, final_reply):
+        repaired_reply = repair_missing_code_reply(user_input, final_reply, context)
+        if repaired_reply != final_reply:
+            final_reply = repaired_reply
+            if CONVERSATION_HISTORY:
+                CONVERSATION_HISTORY[-1]["content"] = final_reply
+
     conversation_meta = emotional_memory_metadata(user_input, final_reply)
 
     # Store episodic memory (always)
