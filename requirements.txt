@@ -12,6 +12,7 @@ rich
 
 # Markdown and math rendering
 Markdown
+Pygments
 latex2mathml
 pylatexenc
 

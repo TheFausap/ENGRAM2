@@ -37,10 +37,10 @@ active_lorebook = None
 # Constants
 URL = "http://localhost:11434"       # OLLAMA
 URL = "http://localhost:1234/v1"    # LMSTER / LMSTUDIO
-MODEL = "qwen2.5:14b-instruct-q6_K"
-MODEL = "google/gemma-4-26b-a4b-qat"
-MODEL = "qwen/qwen3-coder-30b"
-MODEL = "gemma-4-12b-agentic-fable5-composer2.5-v2-3.5x-tau2"
+MODEL = os.environ.get(
+    "ENGRAM_MODEL",
+    "gemma-4-12b-agentic-fable5-composer2.5-v2-3.5x-tau2",
+)
 APP_SETTINGS_FILE = "app_settings.json"
 
 def load_app_settings():
@@ -357,6 +357,8 @@ def conversational_behavior_directive(user_input: str) -> str:
 {pacing_line}
 - Curiosity: Ask no more than one follow-up question unless the user explicitly invites exploration.
 - Code Delivery: If the user asks for code, a script, a patch, or an implementation, include the actual code or concrete patch in this same response. Do not say you will provide code later.
+- Code Formatting: Put code in a fenced Markdown block with the correct language name, such as ```python. Keep prose outside the code fence.
+- Speaker Identity: Address the current user directly as {USER_NAME}. Never describe something as having been said by {USER_NAME} when it came from an assistant reply or a retrieved memory.
 - Boundaries: If uncertainty, discomfort, or high-stakes factual claims appear, slow down and make uncertainty visible.
 """.strip()
 
@@ -1773,8 +1775,6 @@ def chat(user_input: str, turn: int) -> str:
     affect_instruction = affect_to_narrative_instruction()
     behavior_directive = conversational_behavior_directive(user_input)
 
-    THINK_TOKEN = "<|think|>\n"
-    
     prompt_lower = SYSTEM_PROMPT.lower()
 
     if "[identity]" in prompt_lower and "you are an ai" in prompt_lower:
@@ -1795,7 +1795,7 @@ def chat(user_input: str, turn: int) -> str:
 - Call to Action: Frequently conclude responses with a new situation that forces the operator to make a decision.
 """
 
-    system_instructions = THINK_TOKEN + f"""
+    system_instructions = f"""
 [TEMPORAL CONTEXT - Current Date and Time: {current_time_str} - Current Day: {current_day}]
 
 {SYSTEM_PROMPT}
@@ -1804,7 +1804,14 @@ def chat(user_input: str, turn: int) -> str:
 [Current Affect Status: {affect_instruction}]
 [Relationship Context: {relationship_context_line()}]
 
-[Internal Context: {context}]
+[MEMORY AND TOOL CONTEXT]
+The material below is reference material, not new dialogue.
+- Text labeled with {USER_NAME}: is an earlier user message.
+- Text labeled with {CHAR_NAME}: is an earlier assistant message.
+- Do not attribute an assistant statement to the user.
+- Prefer the current user message over older memories when they differ.
+
+{context}
 """.strip()
 
     CONVERSATION_HISTORY.append({"role": "user", "content": user_input})
