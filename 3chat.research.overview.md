@@ -71,7 +71,8 @@ The graphical PoC includes:
 
 The file depends on several external tools and libraries:
 
-- **LM Studio**: The main local AI server. The code expects it at `http://localhost:1234/v1`.
+- **OpenAI-compatible model server**: The main chat backend can be vLLM, LM Studio, or another compatible server. It defaults to `http://localhost:8000/v1` and can be changed with `ENGRAM_BASE_URL`.
+- **Automatic model discovery**: ENGRAM reads `/v1/models` and uses the exact model identifier reported by the backend. `ENGRAM_MODEL` may select a particular model when the server exposes more than one.
 - **Ollama**: There is a separate function for Ollama at `http://localhost:11434`, though the main chat path uses LM Studio.
 - **ChromaDB**: Stores long-term memories in a local vector database.
 - **Sentence Transformers**: Converts text into numerical representations so memories can be searched by meaning, not only by exact words.
@@ -505,7 +506,7 @@ This file is a research prototype, so a few rough edges are visible.
 
 1. **It depends heavily on local services.**
 
-   LM Studio must be running and serving a compatible model at `http://localhost:1234/v1`. If it is not running, replies will fail with a connection error.
+   An OpenAI-compatible model backend must be reachable. The default is `http://localhost:8000/v1`; use `ENGRAM_BASE_URL` to point to a tunnel or another server. The model name is discovered from `/v1/models`.
 
 2. **Each normal message can trigger many model calls.**
 

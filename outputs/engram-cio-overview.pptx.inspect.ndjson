@@ -1,0 +1,207 @@
+{"kind":"deck","id":"pr/t9k8bh","name":"Deck"}
+{"kind":"layout","layoutId":"9c6aecff-6883-4fd1-9bc8-4a05dcd1e908","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"e467c88e-3c41-4e28-a66c-6093ad784c2d","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/bplvmp","slide":1,"title":"EXECUTIVE BRIEFING","textShapes":5}
+{"kind":"shape","id":"sh/tsvu9kni","slide":1,"name":"cover-image-background","bbox":[700,174,538,324]}
+{"kind":"shape","id":"sh/bm58z25k","slide":1,"name":"cover-accent","bbox":[42,44,92,8]}
+{"kind":"textbox","id":"sh/4vmtwra5","slide":1,"name":"cover-kicker","text":"EXECUTIVE BRIEFING","textPreview":"EXECUTIVE BRIEFING","textChars":18,"textLines":1,"bbox":[42,70,420,28]}
+{"kind":"textbox","id":"sh/tgfmlkjm","slide":1,"name":"cover-name","text":"ENGRAM","textPreview":"ENGRAM","textChars":6,"textLines":1,"bbox":[42,160,640,90]}
+{"kind":"textbox","id":"sh/mp0bi9s3","slide":1,"name":"cover-title","text":"A local-first,\nmemory-augmented\nAI assistant","textPreview":"A local-first, | memory-augmented | AI assistant","textChars":44,"textLines":3,"bbox":[42,252,600,170]}
+{"kind":"textbox","id":"sh/bat47y1k","slide":1,"name":"cover-subtitle","text":"What the PoC demonstrates, how it is controlled, and what it would take to move toward an enterprise pilot.","textPreview":"What the PoC demonstrates, how it is controlled, and what it would take to move toward an enterprise pilot.","textChars":107,"textLines":1,"bbox":[42,476,620,110]}
+{"kind":"textbox","id":"sh/4nap4r65","slide":1,"name":"cover-date","text":"CIO audience · 24 June 2026","textPreview":"CIO audience · 24 June 2026","textChars":27,"textLines":1,"bbox":[42,630,450,28]}
+{"kind":"image","id":"im/nap4r65w","slide":1,"name":"","geometry":"rect","alt":"ENGRAM local web interface showing chat, affect, relationship and memory state","bbox":[708,182,522,294]}
+{"kind":"notes","id":"nt/bplvmp","slide":1,"text":""}
+{"kind":"slide","id":"sl/6krjew","slide":2,"title":"The PoC proves an operating model, not just a chatbot","textShapes":12}
+{"kind":"textbox","id":"sh/za1gvy90","slide":2,"name":"title-2","text":"The PoC proves an operating model, not just a chatbot","textPreview":"The PoC proves an operating model, not just a chatbot","textChars":53,"textLines":1,"bbox":[42,36,1130,84]}
+{"kind":"textbox","id":"sh/svu9knih","slide":2,"name":"page-2","text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[1182,660,56,22]}
+{"kind":"textbox","id":"sh/hgn29gr2","slide":2,"name":"thesis","text":"ENGRAM combines local inference, persistent organizational memory, controlled knowledge ingestion, live verification, and an inspectable quality loop in one working experience.","textPreview":"ENGRAM combines local inference, persistent organizational memory, controlled knowledge ingestion, live verification, and an inspectable ...","textChars":176,"textLines":1,"bbox":[42,152,1160,98]}
+{"kind":"shape","id":"sh/a1gvy90j","slide":2,"name":"control-mark","bbox":[46,308,12,12]}
+{"kind":"textbox","id":"sh/zidonyd0","slide":2,"name":"control-label","text":"Control","textPreview":"Control","textChars":7,"textLines":1,"bbox":[78,304,230,28]}
+{"kind":"textbox","id":"sh/s36hcrmh","slide":2,"name":"control-body","text":"The model endpoint, histories, prompts and vector memory are operated locally in the current design.","textPreview":"The model endpoint, histories, prompts and vector memory are operated locally in the current design.","textChars":100,"textLines":1,"bbox":[314,304,860,46]}
+{"kind":"shape","id":"sh/hoza1gvy","slide":2,"name":"continuity-mark","bbox":[46,396,12,12]}
+{"kind":"textbox","id":"sh/a5gbq1or","slide":2,"name":"continuity-label","text":"Continuity","textPreview":"Continuity","textChars":10,"textLines":1,"bbox":[78,392,230,28]}
+{"kind":"textbox","id":"sh/3m94fu18","slide":2,"name":"continuity-body","text":"Three memory types preserve conversations, reusable knowledge and learned procedures across sessions.","textPreview":"Three memory types preserve conversations, reusable knowledge and learned procedures across sessions.","textChars":101,"textLines":1,"bbox":[314,392,860,46]}
+{"kind":"shape","id":"sh/zidonyd0","slide":2,"name":"adaptation-mark","bbox":[46,484,12,12]}
+{"kind":"textbox","id":"sh/a1gvy90j","slide":2,"name":"adaptation-label","text":"Adaptation","textPreview":"Adaptation","textChars":10,"textLines":1,"bbox":[78,480,230,28]}
+{"kind":"textbox","id":"sh/hoza1gvy","slide":2,"name":"adaptation-body","text":"Every response can be validated, improved and translated into bounded future guidance without rewriting the personality file.","textPreview":"Every response can be validated, improved and translated into bounded future guidance without rewriting the personality file.","textChars":125,"textLines":1,"bbox":[314,480,860,46]}
+{"kind":"shape","id":"sh/s36hcrmh","slide":2,"name":"exec-bottom-band","bbox":[0,610,1280,110]}
+{"kind":"textbox","id":"sh/za1gvy90","slide":2,"name":"exec-band-label","text":"CIO relevance","textPreview":"CIO relevance","textChars":13,"textLines":1,"bbox":[42,635,190,26]}
+{"kind":"textbox","id":"sh/ap4r65wj","slide":2,"name":"exec-band-copy","text":"A concrete test bed for private AI patterns, knowledge continuity and governed agent behavior.","textPreview":"A concrete test bed for private AI patterns, knowledge continuity and governed agent behavior.","textChars":94,"textLines":1,"bbox":[248,626,940,48]}
+{"kind":"textbox","id":"sh/hgn29gr2","slide":2,"name":"source-2","text":"Source: ENGRAM2 implementation review, 24 June 2026","textPreview":"Source: ENGRAM2 implementation review, 24 June 2026","textChars":51,"textLines":1,"bbox":[42,666,760,18]}
+{"kind":"notes","id":"nt/6krjew","slide":2,"text":""}
+{"kind":"slide","id":"sl/fybr1j","slide":3,"title":"Architecture: local orchestration around a replaceable model","textShapes":20}
+{"kind":"textbox","id":"sh/svu9knih","slide":3,"name":"title-3","text":"Architecture: local orchestration around a replaceable model","textPreview":"Architecture: local orchestration around a replaceable model","textChars":60,"textLines":1,"bbox":[42,36,1180,84]}
+{"kind":"textbox","id":"sh/za1gvy90","slide":3,"name":"page-3","text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[1182,660,56,22]}
+{"kind":"textbox","id":"sh/ap4r65wj","slide":3,"name":"architecture-subtitle","text":"The model is one component. The durable value sits in memory, context assembly, ingestion and governance logic.","textPreview":"The model is one component. The durable value sits in memory, context assembly, ingestion and governance logic.","textChars":111,"textLines":1,"bbox":[42,124,1120,52]}
+{"kind":"textbox","id":"sh/hoza1gvy","slide":3,"name":"arch-arrow-0","text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[246,318,36,48]}
+{"kind":"textbox","id":"sh/s36hcrmh","slide":3,"name":"arch-arrow-1","text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[490,318,36,48]}
+{"kind":"textbox","id":"sh/zidonyd0","slide":3,"name":"arch-arrow-2","text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[734,318,36,48]}
+{"kind":"textbox","id":"sh/a1gvy90j","slide":3,"name":"arch-arrow-3","text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[978,318,36,48]}
+{"kind":"shape","id":"sh/lszqtcj6","slide":3,"name":"arch-node-0","bbox":[42,248,202,238]}
+{"kind":"textbox","id":"sh/s72x4nap","slide":3,"name":"arch-label-0","text":"Experience","textPreview":"Experience","textChars":10,"textLines":1,"bbox":[64,275,158,38]}
+{"kind":"textbox","id":"sh/idonyd0z","slide":3,"name":"arch-body-0","text":"Browser PoC\nTerminal interface","textPreview":"Browser PoC | Terminal interface","textChars":30,"textLines":2,"bbox":[64,340,158,110]}
+{"kind":"shape","id":"sh/byhgn29g","slide":3,"name":"arch-node-1","bbox":[286,248,202,238]}
+{"kind":"textbox","id":"sh/0je9cvix","slide":3,"name":"arch-label-1","text":"Orchestration","textPreview":"Orchestration","textChars":13,"textLines":1,"bbox":[308,275,158,38]}
+{"kind":"textbox","id":"sh/t47y1kre","slide":3,"name":"arch-body-1","text":"Prompt assembly\nCommands\nContext routing","textPreview":"Prompt assembly | Commands | Context routing","textChars":40,"textLines":3,"bbox":[308,340,158,110]}
+{"kind":"shape","id":"sh/il0rqd4v","slide":3,"name":"arch-node-2","bbox":[530,248,202,238]}
+{"kind":"textbox","id":"sh/b6xkf6dc","slide":3,"name":"arch-label-2","text":"Intelligence","textPreview":"Intelligence","textChars":12,"textLines":1,"bbox":[552,275,158,38]}
+{"kind":"textbox","id":"sh/0rqd4vmt","slide":3,"name":"arch-body-2","text":"Local LLM via\nLM Studio\nOptional Ollama path","textPreview":"Local LLM via | LM Studio | Optional Ollama path","textChars":44,"textLines":3,"bbox":[552,340,158,110]}
+{"kind":"shape","id":"sh/tcj6tova","slide":3,"name":"arch-node-3","bbox":[774,248,202,238]}
+{"kind":"textbox","id":"sh/ixczed8v","slide":3,"name":"arch-label-3","text":"Memory","textPreview":"Memory","textChars":6,"textLines":1,"bbox":[796,275,158,38]}
+{"kind":"textbox","id":"sh/bi9s36hc","slide":3,"name":"arch-body-3","text":"ChromaDB\nEpisodic\nSemantic\nProcedural","textPreview":"ChromaDB | Episodic | Semantic | Procedural","textChars":37,"textLines":4,"bbox":[796,340,158,110]}
+{"kind":"shape","id":"sh/zidonyd0","slide":3,"name":"arch-node-4","bbox":[1018,248,220,238]}
+{"kind":"textbox","id":"sh/a1gvy90j","slide":3,"name":"arch-label-4","text":"Knowledge","textPreview":"Knowledge","textChars":9,"textLines":1,"bbox":[1040,275,176,38]}
+{"kind":"textbox","id":"sh/hoza1gvy","slide":3,"name":"arch-body-4","text":"Web search + URL\nPDF/text/code\nVision input","textPreview":"Web search + URL | PDF/text/code | Vision input","textChars":43,"textLines":3,"bbox":[1040,340,176,110]}
+{"kind":"shape","id":"sh/s36hcrmh","slide":3,"name":"arch-governance-band","bbox":[42,535,1196,82]}
+{"kind":"textbox","id":"sh/za1gvy90","slide":3,"name":"arch-governance-label","text":"Cross-cutting controls","textPreview":"Cross-cutting controls","textChars":22,"textLines":1,"bbox":[66,558,238,28]}
+{"kind":"textbox","id":"sh/ap4r65wj","slide":3,"name":"arch-governance-body","text":"Character prompt · user identity · validation · adaptive guidance · backup/reset · memory inspection","textPreview":"Character prompt · user identity · validation · adaptive guidance · backup/reset · memory inspection","textChars":100,"textLines":1,"bbox":[320,552,880,40]}
+{"kind":"textbox","id":"sh/hgn29gr2","slide":3,"name":"source-3","text":"Source: ENGRAM2 implementation review, 24 June 2026","textPreview":"Source: ENGRAM2 implementation review, 24 June 2026","textChars":51,"textLines":1,"bbox":[42,666,760,18]}
+{"kind":"notes","id":"nt/fybr1j","slide":3,"text":""}
+{"kind":"slide","id":"sl/mp9coz","slide":4,"title":"A broad PoC with enterprise-relevant primitives","textShapes":18}
+{"kind":"textbox","id":"sh/eloj2t83","slide":4,"name":"title-4","text":"A broad PoC with enterprise-relevant primitives","textPreview":"A broad PoC with enterprise-relevant primitives","textChars":47,"textLines":1,"bbox":[42,36,820,84]}
+{"kind":"textbox","id":"sh/lc7u54zi","slide":4,"name":"page-4","text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[1182,660,56,22]}
+{"kind":"textbox","id":"sh/wra5gbq1","slide":4,"name":"metric-subtitle","text":"Implementation facts, not benchmark claims","textPreview":"Implementation facts, not benchmark claims","textChars":42,"textLines":1,"bbox":[800,51,400,42]}
+{"kind":"shape","id":"sh/7u54zido","slide":4,"name":"metric-card-0","bbox":[42,210,270,290]}
+{"kind":"textbox","id":"sh/ed8bat47","slide":4,"name":"metric-stat-0","text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[66,236,222,82]}
+{"kind":"textbox","id":"sh/l0rqd4vm","slide":4,"name":"metric-label-0","text":"memory domains","textPreview":"memory domains","textChars":14,"textLines":1,"bbox":[66,329,222,34]}
+{"kind":"textbox","id":"sh/wfyxobm5","slide":4,"name":"metric-body-0","text":"Events, knowledge and procedures are separated.","textPreview":"Events, knowledge and procedures are separated.","textChars":47,"textLines":1,"bbox":[66,390,222,76]}
+{"kind":"shape","id":"sh/7mp0bi9s","slide":4,"name":"metric-card-1","bbox":[351,210,270,290]}
+{"kind":"textbox","id":"sh/e1w7mp0b","slide":4,"name":"metric-stat-1","text":"35","textPreview":"35","textChars":2,"textLines":1,"bbox":[375,236,222,82]}
+{"kind":"textbox","id":"sh/0rqd4vmt","slide":4,"name":"metric-label-1","text":"conversation turns","textPreview":"conversation turns","textChars":18,"textLines":1,"bbox":[375,329,222,34]}
+{"kind":"textbox","id":"sh/tcj6tova","slide":4,"name":"metric-body-1","text":"Recent dialogue is retained before trimming.","textPreview":"Recent dialogue is retained before trimming.","textChars":44,"textLines":1,"bbox":[375,390,222,76]}
+{"kind":"shape","id":"sh/il0rqd4v","slide":4,"name":"metric-card-2","bbox":[660,210,270,290]}
+{"kind":"textbox","id":"sh/b6xkf6dc","slide":4,"name":"metric-stat-2","text":"5 MB","textPreview":"5 MB","textChars":4,"textLines":1,"bbox":[684,236,222,82]}
+{"kind":"textbox","id":"sh/0je9cvix","slide":4,"name":"metric-label-2","text":"file-ingest limit","textPreview":"file-ingest limit","textChars":17,"textLines":1,"bbox":[684,329,222,34]}
+{"kind":"textbox","id":"sh/t47y1kre","slide":4,"name":"metric-body-2","text":"Text and source code are validated before storage.","textPreview":"Text and source code are validated before storage.","textChars":50,"textLines":1,"bbox":[684,390,222,76]}
+{"kind":"shape","id":"sh/idonyd0z","slide":4,"name":"metric-card-3","bbox":[969,210,270,290]}
+{"kind":"textbox","id":"sh/byhgn29g","slide":4,"name":"metric-stat-3","text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[993,236,222,82]}
+{"kind":"textbox","id":"sh/0fepkzup","slide":4,"name":"metric-label-3","text":"adaptive rules","textPreview":"adaptive rules","textChars":14,"textLines":1,"bbox":[993,329,222,34]}
+{"kind":"textbox","id":"sh/p0bi9s36","slide":4,"name":"metric-body-3","text":"Five corrective and three reinforcing rules maximum.","textPreview":"Five corrective and three reinforcing rules maximum.","textChars":52,"textLines":1,"bbox":[993,390,222,76]}
+{"kind":"shape","id":"sh/tsvu9kni","slide":4,"name":"metric-band","bbox":[0,566,1280,154]}
+{"kind":"textbox","id":"sh/47y1kre1","slide":4,"name":"metric-band-label","text":"Also implemented","textPreview":"Also implemented","textChars":16,"textLines":1,"bbox":[42,598,190,28]}
+{"kind":"textbox","id":"sh/bm58z25k","slide":4,"name":"metric-band-copy","text":"Web verification · direct URL reading · PDF ingestion · text/code ingestion · image analysis · Markdown/LaTeX rendering","textPreview":"Web verification · direct URL reading · PDF ingestion · text/code ingestion · image analysis · Markdown/LaTeX rendering","textChars":119,"textLines":1,"bbox":[250,590,950,60]}
+{"kind":"textbox","id":"sh/m1cfa9w3","slide":4,"name":"source-4","text":"Source: ENGRAM2 implementation review, 24 June 2026","textPreview":"Source: ENGRAM2 implementation review, 24 June 2026","textChars":51,"textLines":1,"bbox":[42,666,760,18]}
+{"kind":"notes","id":"nt/mp9coz","slide":4,"text":""}
+{"kind":"slide","id":"sl/5yphye","slide":5,"title":"Capability scope","textShapes":16}
+{"kind":"textbox","id":"sh/q1orytsv","slide":5,"name":"title-5","text":"Capability scope","textPreview":"Capability scope","textChars":16,"textLines":1,"bbox":[42,36,360,84]}
+{"kind":"textbox","id":"sh/xs72x4na","slide":5,"name":"page-5","text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[1182,660,56,22]}
+{"kind":"textbox","id":"sh/87ed8bat","slide":5,"name":"capabilities-intro","text":"Six capability domains now work together in one local experience.","textPreview":"Six capability domains now work together in one local experience.","textChars":65,"textLines":1,"bbox":[454,48,760,44]}
+{"kind":"textbox","id":"sh/je9cvixc","slide":5,"name":"cap-label-0","text":"MEMORY","textPreview":"MEMORY","textChars":6,"textLines":1,"bbox":[42,145,200,34]}
+{"kind":"textbox","id":"sh/qtcj6tov","slide":5,"name":"cap-body-0","text":"Semantic recall across conversations, facts and reusable procedures","textPreview":"Semantic recall across conversations, facts and reusable procedures","textChars":67,"textLines":1,"bbox":[270,141,920,52]}
+{"kind":"shape","id":"sh/1gvy90je","slide":5,"name":"cap-rule-0","bbox":[270,199,920,1]}
+{"kind":"textbox","id":"sh/8z25kb6x","slide":5,"name":"cap-label-1","text":"KNOWLEDGE","textPreview":"KNOWLEDGE","textChars":9,"textLines":1,"bbox":[42,227,200,34]}
+{"kind":"textbox","id":"sh/fa9w3m94","slide":5,"name":"cap-body-1","text":"Ingest URLs, PDFs, text files and source code into vector memory","textPreview":"Ingest URLs, PDFs, text files and source code into vector memory","textChars":64,"textLines":1,"bbox":[270,223,920,52]}
+{"kind":"shape","id":"sh/qpg3ex0n","slide":5,"name":"cap-rule-1","bbox":[270,281,920,1]}
+{"kind":"textbox","id":"sh/wjudg7ad","slide":5,"name":"cap-label-2","text":"VERIFICATION","textPreview":"VERIFICATION","textChars":12,"textLines":1,"bbox":[42,309,200,34]}
+{"kind":"textbox","id":"sh/p4r65wju","slide":5,"name":"cap-body-2","text":"DuckDuckGo search and direct page retrieval for current or specific facts","textPreview":"DuckDuckGo search and direct page retrieval for current or specific facts","textChars":73,"textLines":1,"bbox":[270,305,920,52]}
+{"kind":"shape","id":"sh/ed8v6psf","slide":5,"name":"cap-rule-2","bbox":[270,363,920,1]}
+{"kind":"textbox","id":"sh/7y1kre1w","slide":5,"name":"cap-label-3","text":"MULTIMODAL","textPreview":"MULTIMODAL","textChars":10,"textLines":1,"bbox":[42,391,200,34]}
+{"kind":"textbox","id":"sh/0bi9s36h","slide":5,"name":"cap-body-3","text":"Image input path for charts, diagrams and screenshots when the model supports vision","textPreview":"Image input path for charts, diagrams and screenshots when the model supports vision","textChars":84,"textLines":1,"bbox":[270,387,920,52]}
+{"kind":"shape","id":"sh/pwb2hwfy","slide":5,"name":"cap-rule-3","bbox":[270,445,920,1]}
+{"kind":"textbox","id":"sh/i5sneloj","slide":5,"name":"cap-label-4","text":"EXPERIENCE","textPreview":"EXPERIENCE","textChars":10,"textLines":1,"bbox":[42,473,200,34]}
+{"kind":"textbox","id":"sh/7qpg3ex0","slide":5,"name":"cap-body-4","text":"Browser UI with state visualization, memory inspection and rich Markdown/math/code output","textPreview":"Browser UI with state visualization, memory inspection and rich Markdown/math/code output","textChars":89,"textLines":1,"bbox":[270,469,920,52]}
+{"kind":"shape","id":"sh/0z61032l","slide":5,"name":"cap-rule-4","bbox":[270,527,920,1]}
+{"kind":"textbox","id":"sh/pkzupwb2","slide":5,"name":"cap-label-5","text":"QUALITY","textPreview":"QUALITY","textChars":7,"textLines":1,"bbox":[42,555,200,34]}
+{"kind":"textbox","id":"sh/donyd0z6","slide":5,"name":"cap-body-5","text":"Self-critique, missing-code repair, tool-token cleanup and bounded adaptive prompt guidance","textPreview":"Self-critique, missing-code repair, tool-token cleanup and bounded adaptive prompt guidance","textChars":91,"textLines":1,"bbox":[270,551,920,52]}
+{"kind":"shape","id":"sh/k3q5o7qp","slide":5,"name":"cap-rule-5","bbox":[270,609,920,1]}
+{"kind":"textbox","id":"sh/vixczed8","slide":5,"name":"source-5","text":"Source: ENGRAM2 implementation review, 24 June 2026","textPreview":"Source: ENGRAM2 implementation review, 24 June 2026","textChars":51,"textLines":1,"bbox":[42,666,760,18]}
+{"kind":"notes","id":"nt/5yphye","slide":5,"text":""}
+{"kind":"slide","id":"sl/tfd0a9","slide":6,"title":"Adaptive quality is bounded and inspectable","textShapes":21}
+{"kind":"textbox","id":"sh/6xkf6dcb","slide":6,"name":"title-6","text":"Adaptive quality is bounded and inspectable","textPreview":"Adaptive quality is bounded and inspectable","textChars":43,"textLines":1,"bbox":[42,36,1180,84]}
+{"kind":"textbox","id":"sh/hk3q5o7q","slide":6,"name":"page-6","text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[1182,660,56,22]}
+{"kind":"textbox","id":"sh/oza1gvy9","slide":6,"name":"learning-subtitle","text":"The personality file remains authoritative. Validation only updates a small, inspectable guidance layer.","textPreview":"The personality file remains authoritative. Validation only updates a small, inspectable guidance layer.","textChars":104,"textLines":1,"bbox":[42,126,1120,52]}
+{"kind":"textbox","id":"sh/zqtcj6to","slide":6,"name":"loop-arrow-0","text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[304,326,40,48]}
+{"kind":"textbox","id":"sh/65wjudg7","slide":6,"name":"loop-arrow-1","text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[611,326,40,48]}
+{"kind":"textbox","id":"sh/hwfyxobm","slide":6,"name":"loop-arrow-2","text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[918,326,40,48]}
+{"kind":"shape","id":"sh/obm58z25","slide":6,"name":"loop-card-0","bbox":[42,242,265,246]}
+{"kind":"textbox","id":"sh/zupwb2hw","slide":6,"name":"loop-num-0","text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[64,264,50,42]}
+{"kind":"textbox","id":"sh/a9w3m94f","slide":6,"name":"loop-label-0","text":"Generate","textPreview":"Generate","textChars":8,"textLines":1,"bbox":[64,322,220,38]}
+{"kind":"textbox","id":"sh/8bat47y1","slide":6,"name":"loop-body-0","text":"Answer using prompt, memory, context and tools.","textPreview":"Answer using prompt, memory, context and tools.","textChars":47,"textLines":1,"bbox":[64,386,220,76]}
+{"kind":"shape","id":"sh/1w7mp0bi","slide":6,"name":"loop-card-1","bbox":[349,242,265,246]}
+{"kind":"textbox","id":"sh/q5o7qpg3","slide":6,"name":"loop-num-1","text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[371,264,50,42]}
+{"kind":"textbox","id":"sh/jqh0fepk","slide":6,"name":"loop-label-1","text":"Validate","textPreview":"Validate","textChars":8,"textLines":1,"bbox":[371,322,220,38]}
+{"kind":"textbox","id":"sh/8nqxs72x","slide":6,"name":"loop-body-1","text":"Score quality, accuracy, formatting and character consistency.","textPreview":"Score quality, accuracy, formatting and character consistency.","textChars":62,"textLines":1,"bbox":[371,386,220,76]}
+{"kind":"shape","id":"sh/18jqh0fe","slide":6,"name":"loop-card-2","bbox":[656,242,265,246]}
+{"kind":"textbox","id":"sh/qh0fepkz","slide":6,"name":"loop-num-2","text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[678,264,50,42]}
+{"kind":"textbox","id":"sh/j2t83itg","slide":6,"name":"loop-label-2","text":"Improve","textPreview":"Improve","textChars":7,"textLines":1,"bbox":[678,322,220,38]}
+{"kind":"textbox","id":"sh/crmhk3q5","slide":6,"name":"loop-body-2","text":"Return a corrected answer when the first response is weak.","textPreview":"Return a corrected answer when the first response is weak.","textChars":58,"textLines":1,"bbox":[678,386,220,76]}
+{"kind":"shape","id":"sh/1cfa9w3m","slide":6,"name":"loop-card-3","bbox":[963,242,265,246]}
+{"kind":"textbox","id":"sh/5wjudg7a","slide":6,"name":"loop-num-3","text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[985,264,50,42]}
+{"kind":"textbox","id":"sh/gbq1oryt","slide":6,"name":"loop-label-3","text":"Learn","textPreview":"Learn","textChars":5,"textLines":1,"bbox":[985,322,220,38]}
+{"kind":"textbox","id":"sh/nuxc3ylc","slide":6,"name":"loop-body-3","text":"Retain a short, reusable rule for future prompts.","textPreview":"Retain a short, reusable rule for future prompts.","textChars":49,"textLines":1,"bbox":[985,386,220,76]}
+{"kind":"shape","id":"sh/y90je9cv","slide":6,"name":"loop-control-band","bbox":[42,535,1196,82]}
+{"kind":"textbox","id":"sh/58z25kb6","slide":6,"name":"loop-control-label","text":"Guardrails","textPreview":"Guardrails","textChars":10,"textLines":1,"bbox":[66,558,140,28]}
+{"kind":"textbox","id":"sh/gn29gr2p","slide":6,"name":"loop-control-body","text":"Prompt-scoped · deduplicated · capped · injection-like lessons rejected · visible via /learning · reversible","textPreview":"Prompt-scoped · deduplicated · capped · injection-like lessons rejected · visible via /learning · reversible","textChars":108,"textLines":1,"bbox":[218,552,960,42]}
+{"kind":"textbox","id":"sh/n29gr2p8","slide":6,"name":"source-6","text":"Source: ENGRAM2 implementation review, 24 June 2026","textPreview":"Source: ENGRAM2 implementation review, 24 June 2026","textChars":51,"textLines":1,"bbox":[42,666,760,18]}
+{"kind":"notes","id":"nt/tfd0a9","slide":6,"text":""}
+{"kind":"slide","id":"sl/1n046r","slide":7,"title":"Control foundations exist; production assurance does not","textShapes":21}
+{"kind":"textbox","id":"sh/byhgn29g","slide":7,"name":"title-7","text":"Control foundations exist; production assurance does not","textPreview":"Control foundations exist; production assurance does not","textChars":56,"textLines":1,"bbox":[42,36,1180,84]}
+{"kind":"textbox","id":"sh/0je9cvix","slide":7,"name":"page-7","text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[1182,660,56,22]}
+{"kind":"textbox","id":"sh/t47y1kre","slide":7,"name":"gov-h1","text":"Domain","textPreview":"Domain","textChars":6,"textLines":1,"bbox":[42,152,190,32]}
+{"kind":"textbox","id":"sh/il0rqd4v","slide":7,"name":"gov-h2","text":"Implemented in the PoC","textPreview":"Implemented in the PoC","textChars":22,"textLines":1,"bbox":[258,152,410,32]}
+{"kind":"textbox","id":"sh/b6xkf6dc","slide":7,"name":"gov-h3","text":"Required for enterprise use","textPreview":"Required for enterprise use","textChars":27,"textLines":1,"bbox":[706,152,488,32]}
+{"kind":"shape","id":"sh/0rqd4vmt","slide":7,"name":"gov-head-rule","bbox":[42,192,1152,2]}
+{"kind":"shape","id":"sh/tcj6tova","slide":7,"name":"gov-row-bg-0","bbox":[42,202,1152,72]}
+{"kind":"textbox","id":"sh/ixczed8v","slide":7,"name":"gov-domain-0","text":"Data locality","textPreview":"Data locality","textChars":13,"textLines":1,"bbox":[58,210,174,50]}
+{"kind":"textbox","id":"sh/bi9s36hc","slide":7,"name":"gov-current-0","text":"Local model, state and vector DB paths","textPreview":"Local model, state and vector DB paths","textChars":38,"textLines":1,"bbox":[258,210,402,54]}
+{"kind":"textbox","id":"sh/rytsvu9k","slide":7,"name":"gov-required-0","text":"Host access, encryption and retention controls","textPreview":"Host access, encryption and retention controls","textChars":46,"textLines":1,"bbox":[706,210,472,54]}
+{"kind":"shape","id":"sh/yd0z6103","slide":7,"name":"gov-rule-0","bbox":[42,275,1152,1]}
+{"kind":"textbox","id":"sh/90je9cvi","slide":7,"name":"gov-domain-1","text":"Traceability","textPreview":"Traceability","textChars":12,"textLines":1,"bbox":[58,292,174,50]}
+{"kind":"textbox","id":"sh/gfmlkjm1","slide":7,"name":"gov-current-1","text":"Memory inspector, metadata and vector previews","textPreview":"Memory inspector, metadata and vector previews","textChars":46,"textLines":1,"bbox":[258,292,402,54]}
+{"kind":"textbox","id":"sh/rmhk3q5o","slide":7,"name":"gov-required-1","text":"Audit log and policy-grade provenance","textPreview":"Audit log and policy-grade provenance","textChars":37,"textLines":1,"bbox":[706,292,472,54]}
+{"kind":"shape","id":"sh/y1kre1w7","slide":7,"name":"gov-rule-1","bbox":[42,357,1152,1]}
+{"kind":"shape","id":"sh/9s36hcrm","slide":7,"name":"gov-row-bg-2","bbox":[42,366,1152,72]}
+{"kind":"textbox","id":"sh/g7adsji5","slide":7,"name":"gov-domain-2","text":"Quality","textPreview":"Quality","textChars":7,"textLines":1,"bbox":[58,374,174,50]}
+{"kind":"textbox","id":"sh/nih4byhg","slide":7,"name":"gov-current-2","text":"Validation score, improved reply and learned guidance","textPreview":"Validation score, improved reply and learned guidance","textChars":53,"textLines":1,"bbox":[258,374,402,54]}
+{"kind":"textbox","id":"sh/yxobm58z","slide":7,"name":"gov-required-2","text":"Independent evaluation set and acceptance thresholds","textPreview":"Independent evaluation set and acceptance thresholds","textChars":52,"textLines":1,"bbox":[706,374,472,54]}
+{"kind":"shape","id":"sh/61032lsz","slide":7,"name":"gov-rule-2","bbox":[42,439,1152,1]}
+{"kind":"textbox","id":"sh/vmtwra5g","slide":7,"name":"gov-domain-3","text":"Recovery","textPreview":"Recovery","textChars":8,"textLines":1,"bbox":[58,456,174,50]}
+{"kind":"textbox","id":"sh/o7qpg3ex","slide":7,"name":"gov-current-3","text":"Backup-before-reset with identity preserved","textPreview":"Backup-before-reset with identity preserved","textChars":43,"textLines":1,"bbox":[258,456,402,54]}
+{"kind":"textbox","id":"sh/dsji5sne","slide":7,"name":"gov-required-3","text":"Managed backup lifecycle and restore testing","textPreview":"Managed backup lifecycle and restore testing","textChars":44,"textLines":1,"bbox":[706,456,472,54]}
+{"kind":"shape","id":"sh/6dcbulwv","slide":7,"name":"gov-rule-3","bbox":[42,521,1152,1]}
+{"kind":"shape","id":"sh/vy90je9c","slide":7,"name":"gov-row-bg-4","bbox":[42,530,1152,72]}
+{"kind":"textbox","id":"sh/oj2t83it","slide":7,"name":"gov-domain-4","text":"External data","textPreview":"External data","textChars":13,"textLines":1,"bbox":[58,538,174,50]}
+{"kind":"textbox","id":"sh/d4vmtwra","slide":7,"name":"gov-current-4","text":"Search snippets and direct URL retrieval","textPreview":"Search snippets and direct URL retrieval","textChars":40,"textLines":1,"bbox":[258,538,402,54]}
+{"kind":"textbox","id":"sh/6hcrmhk3","slide":7,"name":"gov-required-4","text":"Approved connectors, source policy and content controls","textPreview":"Approved connectors, source policy and content controls","textChars":55,"textLines":1,"bbox":[706,538,472,54]}
+{"kind":"shape","id":"sh/z25kb6xk","slide":7,"name":"gov-rule-4","bbox":[42,603,1152,1]}
+{"kind":"textbox","id":"sh/l87ed8ba","slide":7,"name":"source-7","text":"Source: ENGRAM2 implementation review, 24 June 2026","textPreview":"Source: ENGRAM2 implementation review, 24 June 2026","textChars":51,"textLines":1,"bbox":[42,666,760,18]}
+{"kind":"notes","id":"nt/1n046r","slide":7,"text":""}
+{"kind":"slide","id":"sl/1gjsy1","slide":8,"title":"From PoC to a controlled enterprise pilot","textShapes":17}
+{"kind":"textbox","id":"sh/pg3ex0nu","slide":8,"name":"title-8","text":"From PoC to a controlled enterprise pilot","textPreview":"From PoC to a controlled enterprise pilot","textChars":41,"textLines":1,"bbox":[42,36,940,84]}
+{"kind":"textbox","id":"sh/epkzupwb","slide":8,"name":"page-8","text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[1182,660,56,22]}
+{"kind":"textbox","id":"sh/7adsji5s","slide":8,"name":"roadmap-subtitle","text":"Sequence investment behind evidence. Avoid turning a broad prototype into an ungoverned internal platform.","textPreview":"Sequence investment behind evidence. Avoid turning a broad prototype into an ungoverned internal platform.","textChars":106,"textLines":1,"bbox":[42,126,1120,54]}
+{"kind":"shape","id":"sh/w7mp0bi9","slide":8,"name":"road-card-0","bbox":[42,226,374,336]}
+{"kind":"textbox","id":"sh/psfil0rq","slide":8,"name":"road-num-0","text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[68,250,44,42]}
+{"kind":"textbox","id":"sh/e1w7mp0b","slide":8,"name":"road-label-0","text":"Stabilize","textPreview":"Stabilize","textChars":9,"textLines":1,"bbox":[68,308,260,38]}
+{"kind":"textbox","id":"sh/7mp0bi9s","slide":8,"name":"road-timing-0","text":"2–4 weeks","textPreview":"2–4 weeks","textChars":9,"textLines":1,"bbox":[68,354,260,30]}
+{"kind":"textbox","id":"sh/wfyxobm5","slide":8,"name":"road-body-0","text":"Configuration cleanup\nError handling\nTelemetry\nEvaluation harness","textPreview":"Configuration cleanup | Error handling | Telemetry | Evaluation harness","textChars":65,"textLines":4,"bbox":[68,410,310,116]}
+{"kind":"shape","id":"sh/l0rqd4vm","slide":8,"name":"road-card-1","bbox":[452,226,374,336]}
+{"kind":"textbox","id":"sh/hk3q5o7q","slide":8,"name":"road-num-1","text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[478,250,44,42]}
+{"kind":"textbox","id":"sh/oza1gvy9","slide":8,"name":"road-label-1","text":"Pilot","textPreview":"Pilot","textChars":5,"textLines":1,"bbox":[478,308,260,38]}
+{"kind":"textbox","id":"sh/zed8v6ps","slide":8,"name":"road-timing-1","text":"6–8 weeks","textPreview":"6–8 weeks","textChars":9,"textLines":1,"bbox":[478,354,260,30]}
+{"kind":"textbox","id":"sh/6xkf6dcb","slide":8,"name":"road-body-1","text":"One use case\nNamed users\nCurated knowledge\nHuman review","textPreview":"One use case | Named users | Curated knowledge | Human review","textChars":55,"textLines":4,"bbox":[478,410,310,116]}
+{"kind":"shape","id":"sh/hwfyxobm","slide":8,"name":"road-card-2","bbox":[862,226,374,336]}
+{"kind":"textbox","id":"sh/obm58z25","slide":8,"name":"road-num-2","text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[888,250,44,42]}
+{"kind":"textbox","id":"sh/zqtcj6to","slide":8,"name":"road-label-2","text":"Industrialize","textPreview":"Industrialize","textChars":13,"textLines":1,"bbox":[888,308,260,38]}
+{"kind":"textbox","id":"sh/65wjudg7","slide":8,"name":"road-timing-2","text":"after evidence","textPreview":"after evidence","textChars":14,"textLines":1,"bbox":[888,354,260,30]}
+{"kind":"textbox","id":"sh/h0fepkzu","slide":8,"name":"road-body-2","text":"Identity and access\nPolicy connectors\nAuditability\nDeployment automation","textPreview":"Identity and access | Policy connectors | Auditability | Deployment automation","textChars":72,"textLines":4,"bbox":[888,410,310,116]}
+{"kind":"textbox","id":"sh/sfil0rqd","slide":8,"name":"road-gates","text":"Pilot success gates: answer quality · groundedness · latency · user value · operating cost · control compliance","textPreview":"Pilot success gates: answer quality · groundedness · latency · user value · operating cost · control compliance","textChars":111,"textLines":1,"bbox":[42,602,1130,42]}
+{"kind":"textbox","id":"sh/onyd0z61","slide":8,"name":"source-8","text":"Source: ENGRAM2 implementation review, 24 June 2026","textPreview":"Source: ENGRAM2 implementation review, 24 June 2026","textChars":51,"textLines":1,"bbox":[42,666,760,18]}
+{"kind":"notes","id":"nt/1gjsy1","slide":8,"text":""}
+{"kind":"slide","id":"sl/nakxmk","slide":9,"title":"Recommended CIO decision","textShapes":11}
+{"kind":"textbox","id":"sh/oj2t83it","slide":9,"name":"title-9","text":"Recommended CIO decision","textPreview":"Recommended CIO decision","textChars":24,"textLines":1,"bbox":[42,36,850,84]}
+{"kind":"textbox","id":"sh/vy90je9c","slide":9,"name":"page-9","text":"9","textPreview":"9","textChars":1,"textLines":1,"bbox":[1182,660,56,22]}
+{"kind":"textbox","id":"sh/6dcbulwv","slide":9,"name":"decision-statement","text":"Proceed to a narrow, controlled pilot — not a general enterprise rollout.","textPreview":"Proceed to a narrow, controlled pilot — not a general enterprise rollout.","textChars":73,"textLines":1,"bbox":[42,156,1080,94]}
+{"kind":"shape","id":"sh/dsji5sne","slide":9,"name":"decision-mark-0","bbox":[42,326,30,30]}
+{"kind":"textbox","id":"sh/o7qpg3ex","slide":9,"name":"decision-label-0","text":"Sponsor","textPreview":"Sponsor","textChars":7,"textLines":1,"bbox":[42,390,330,38]}
+{"kind":"textbox","id":"sh/vmtwra5g","slide":9,"name":"decision-body-0","text":"Select one bounded, knowledge-intensive internal use case.","textPreview":"Select one bounded, knowledge-intensive internal use case.","textChars":58,"textLines":1,"bbox":[42,452,344,94]}
+{"kind":"shape","id":"sh/61032lsz","slide":9,"name":"decision-mark-1","bbox":[453,326,30,30]}
+{"kind":"textbox","id":"sh/dg7adsji","slide":9,"name":"decision-label-1","text":"Govern","textPreview":"Govern","textChars":6,"textLines":1,"bbox":[453,390,330,38]}
+{"kind":"textbox","id":"sh/ovahoza1","slide":9,"name":"decision-body-1","text":"Name data, security, risk and business owners before pilot access.","textPreview":"Name data, security, risk and business owners before pilot access.","textChars":66,"textLines":1,"bbox":[453,452,344,94]}
+{"kind":"shape","id":"sh/mtwra5gb","slide":9,"name":"decision-mark-2","bbox":[864,326,30,30]}
+{"kind":"textbox","id":"sh/fepkzupw","slide":9,"name":"decision-label-2","text":"Measure","textPreview":"Measure","textChars":7,"textLines":1,"bbox":[864,390,330,38]}
+{"kind":"textbox","id":"sh/4zidonyd","slide":9,"name":"decision-body-2","text":"Approve explicit quality, cost, latency and control success gates.","textPreview":"Approve explicit quality, cost, latency and control success gates.","textChars":66,"textLines":1,"bbox":[864,452,344,94]}
+{"kind":"shape","id":"sh/xkf6dcbu","slide":9,"name":"decision-band","bbox":[0,610,1280,110]}
+{"kind":"textbox","id":"sh/mlkjm1cf","slide":9,"name":"decision-band-copy","text":"The PoC has earned the right to be evaluated. The next investment should buy evidence, controls and operational learning.","textPreview":"The PoC has earned the right to be evaluated. The next investment should buy evidence, controls and operational learning.","textChars":121,"textLines":1,"bbox":[42,635,1135,50]}
+{"kind":"textbox","id":"sh/f6dcbulw","slide":9,"name":"source-9","text":"Source: ENGRAM2 implementation review, 24 June 2026","textPreview":"Source: ENGRAM2 implementation review, 24 June 2026","textChars":51,"textLines":1,"bbox":[42,584,760,18]}
+{"kind":"notes","id":"nt/nakxmk","slide":9,"text":""}

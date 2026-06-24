@@ -34,13 +34,17 @@ current_greeting_path = "default.txt"
 SHOW_MEMORY = False
 active_lorebook = None
 
-# Constants
-URL = "http://localhost:11434"       # OLLAMA
-URL = "http://localhost:1234/v1"    # LMSTER / LMSTUDIO
-MODEL = os.environ.get(
-    "ENGRAM_MODEL",
-    "gemma-4-12b-agentic-fable5-composer2.5-v2-3.5x-tau2",
-)
+# OpenAI-compatible backend configuration (LM Studio, vLLM, etc.)
+URL = os.environ.get(
+    "ENGRAM_BASE_URL",
+    os.environ.get("OPENAI_BASE_URL", "http://localhost:8000/v1"),
+).rstrip("/")
+MODEL = os.environ.get("ENGRAM_MODEL", "auto").strip() or "auto"
+API_KEY = os.environ.get("ENGRAM_API_KEY", os.environ.get("OPENAI_API_KEY", "")).strip()
+BASIC_AUTH_USER = os.environ.get("ENGRAM_BASIC_AUTH_USER", "").strip()
+BASIC_AUTH_PASSWORD = os.environ.get("ENGRAM_BASIC_AUTH_PASSWORD", "")
+OLLAMA_URL = os.environ.get("ENGRAM_OLLAMA_URL", "http://localhost:11434").rstrip("/")
+_SERVED_MODELS_CACHE: list[str] | None = None
 APP_SETTINGS_FILE = "app_settings.json"
 
 def load_app_settings():
@@ -865,9 +869,118 @@ def ingest_text_file(path: str) -> dict:
         text = file.read(MAX_TEXT_INGEST_CHARS + 1)
     return ingest_text_content(text, os.path.basename(path), source=f"text-file:{path}")
 
+def openai_request_kwargs() -> dict:
+    kwargs = {"headers": {"Content-Type": "application/json"}}
+    if API_KEY:
+        kwargs["headers"]["Authorization"] = f"Bearer {API_KEY}"
+    if BASIC_AUTH_USER:
+        kwargs["auth"] = (BASIC_AUTH_USER, BASIC_AUTH_PASSWORD)
+    return kwargs
+
+def list_served_models(force_refresh=False) -> list[str]:
+    global _SERVED_MODELS_CACHE
+    if _SERVED_MODELS_CACHE is not None and not force_refresh:
+        return list(_SERVED_MODELS_CACHE)
+
+    response = requests.get(
+        f"{URL}/models",
+        timeout=15,
+        **openai_request_kwargs(),
+    )
+    response.raise_for_status()
+    payload = response.json()
+    models = [
+        str(item.get("id", "")).strip()
+        for item in payload.get("data", [])
+        if isinstance(item, dict) and str(item.get("id", "")).strip()
+    ]
+    if not models:
+        raise RuntimeError(f"No models were reported by {URL}/models.")
+    _SERVED_MODELS_CACHE = models
+    return list(models)
+
+def match_served_model(requested: str, served_models: list[str]) -> str | None:
+    if not served_models:
+        return None
+    requested = (requested or "").strip()
+    if not requested or requested.lower() == "auto":
+        return served_models[0]
+    if requested in served_models:
+        return requested
+
+    requested_lower = requested.lower()
+    case_match = next(
+        (model for model in served_models if model.lower() == requested_lower),
+        None,
+    )
+    if case_match:
+        return case_match
+
+    requested_tail = requested_lower.rstrip("/").split("/")[-1]
+    tail_matches = [
+        model
+        for model in served_models
+        if model.lower().rstrip("/").split("/")[-1] == requested_tail
+    ]
+    return tail_matches[0] if len(tail_matches) == 1 else None
+
+def resolve_served_model(requested: str = "", force_refresh=False) -> str:
+    global MODEL
+    served_models = list_served_models(force_refresh=force_refresh)
+    matched = match_served_model(requested or MODEL, served_models)
+    if matched:
+        MODEL = matched
+        return matched
+    if len(served_models) == 1:
+        MODEL = served_models[0]
+        return MODEL
+    raise RuntimeError(
+        f"Configured model '{requested or MODEL}' is not served by the backend. "
+        f"Available models: {', '.join(served_models)}"
+    )
+
+def chat_completion(messages: list[dict], temperature=0.7, timeout=300, model: str = "") -> dict:
+    requested_model = model or MODEL
+    try:
+        active_model = resolve_served_model(requested_model)
+    except requests.HTTPError as exc:
+        status = exc.response.status_code if exc.response is not None else "unknown"
+        if status == 401:
+            raise RuntimeError(
+                f"{URL}/models requires authentication. Set "
+                "ENGRAM_BASIC_AUTH_USER and ENGRAM_BASIC_AUTH_PASSWORD for an HTTP Basic proxy, "
+                "or ENGRAM_API_KEY for bearer authentication."
+            ) from exc
+        raise
+
+    payload = {
+        "model": active_model,
+        "messages": messages,
+        "temperature": temperature,
+        "stream": False,
+    }
+    response = requests.post(
+        f"{URL}/chat/completions",
+        json=payload,
+        timeout=timeout,
+        **openai_request_kwargs(),
+    )
+
+    if response.status_code == 404 and "does not exist" in response.text.lower():
+        payload["model"] = resolve_served_model(requested_model, force_refresh=True)
+        response = requests.post(
+            f"{URL}/chat/completions",
+            json=payload,
+            timeout=timeout,
+            **openai_request_kwargs(),
+        )
+
+    response.raise_for_status()
+    return response.json()
+
 def generate_ollama(system_msg: str, user_input:str, model: str = MODEL) -> str:
     response = requests.post(
-        URL+"/api/chat",
+        OLLAMA_URL+"/api/chat",
         json={
             "model": model,
             "messages": [
@@ -882,24 +995,18 @@ def generate_ollama(system_msg: str, user_input:str, model: str = MODEL) -> str:
     
 def generate(system_msg: str, user_input: str, model: str = MODEL) -> str:
     try:
-        response = requests.post(
-            f"{URL}/chat/completions",
-            json={
-                "model": model,
-                "messages": [
-                    {"role": "system", "content": system_msg},
-                    {"role": "user", "content": user_input}
-                ],
-                "temperature": 0.7,
-                "stream": False,
-            },
-            timeout=300 # Local LLMs can take time to respond
+        data = chat_completion(
+            [
+                {"role": "system", "content": system_msg},
+                {"role": "user", "content": user_input},
+            ],
+            temperature=0.7,
+            timeout=300,
+            model=model,
         )
-        response.raise_for_status()
-        data = response.json()
         return normalize_tool_protocol_output(data['choices'][0]['message'].get('content') or "")
     except Exception as e:
-        return f"Error connecting to LM Studio: {e}"
+        return f"Error connecting to the OpenAI-compatible backend: {e}"
 
 def image_to_data_url(path: str) -> tuple[str, dict]:
     if not os.path.isfile(path):
@@ -938,27 +1045,21 @@ def analyze_image(path: str, question: str = "", model: str = MODEL) -> dict:
     )
 
     try:
-        response = requests.post(
-            f"{URL}/chat/completions",
-            json={
-                "model": model,
-                "messages": [
-                    {"role": "system", "content": system_msg},
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt},
-                            {"type": "image_url", "image_url": {"url": data_url}},
-                        ],
-                    },
-                ],
-                "temperature": 0.2,
-                "stream": False,
-            },
+        data = chat_completion(
+            [
+                {"role": "system", "content": system_msg},
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": data_url}},
+                    ],
+                },
+            ],
+            temperature=0.2,
             timeout=300,
+            model=model,
         )
-        response.raise_for_status()
-        data = response.json()
         analysis = normalize_tool_protocol_output(
             data["choices"][0]["message"].get("content") or ""
         )
@@ -2069,21 +2170,15 @@ def generate_search_query(user_input: str) -> str:
 
 def generate_with_history(system_msg: str, messages: list[dict], model: str = MODEL) -> str:
     try:
-        response = requests.post(
-            f"{URL}/chat/completions",
-            json={
-                "model": model,
-                "messages": [{"role": "system", "content": system_msg}] + messages,
-                "temperature": 0.7,
-                "stream": False,
-            },
-            timeout=120
+        data = chat_completion(
+            [{"role": "system", "content": system_msg}] + messages,
+            temperature=0.7,
+            timeout=120,
+            model=model,
         )
-        response.raise_for_status()
-        data = response.json()
         return normalize_tool_protocol_output(data['choices'][0]['message'].get('content') or "")
     except Exception as e:
-        return f"Error connecting to LM Studio: {e}"
+        return f"Error connecting to the OpenAI-compatible backend: {e}"
 
 CONVERSATION_HISTORY: list[dict] = []
 MAX_HISTORY_TURNS = 35  # each turn = 1 user + 1 assistant message = 2 entries

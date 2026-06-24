@@ -950,7 +950,7 @@ HTML = r"""<!doctype html>
     function renderState(state) {
       window.characterName = state.character || "Assistant";
       document.getElementById("subtitle").textContent = `${state.character} with ${state.user}`;
-      document.getElementById("identity").textContent = `character: ${state.character}\nuser: ${state.user}\nprompt: ${state.prompt}\nmodel: ${state.model}`;
+      document.getElementById("identity").textContent = `character: ${state.character}\nuser: ${state.user}\nprompt: ${state.prompt}\nbackend: ${state.backend || "-"}\nmodel: ${state.model}`;
 
       renderAffect(state.affect || {});
 
@@ -1387,6 +1387,11 @@ class EngineBridge:
         raw_prompt = self.engine.load_system_prompt(self.engine.current_prompt_path)
         self.engine.SYSTEM_PROMPT = raw_prompt.replace("{{char}}", self.engine.CHAR_NAME).replace("{{user}}", self.engine.USER_NAME)
         self.engine.GREETING = self.engine.load_greeting(self.engine.current_greeting_path)
+        try:
+            self.engine.resolve_served_model()
+        except Exception:
+            # Keep the UI available so configuration errors can be diagnosed there.
+            pass
         self.turn = len(self.engine.CONVERSATION_HISTORY) // 2
 
     def state(self, include_greeting=False):
@@ -1400,6 +1405,7 @@ class EngineBridge:
             "user": self.engine.USER_NAME,
             "prompt": self.engine.current_prompt_path,
             "model": self.engine.MODEL,
+            "backend": self.engine.URL,
             "affect": self.engine.AFFECT.as_dict(),
             "relationship": self.engine.RELATIONSHIP.as_dict(),
             "adaptive": self.engine.adaptive_guidance_summary(),
