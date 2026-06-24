@@ -61,6 +61,7 @@ USER_NAME = _settings.get("user_name", "Klaus")
 STATE_FILE = f"state_{CHAR_NAME}_{USER_NAME}.json"
 DBPATH = f"./chroma_db_{CHAR_NAME}_{USER_NAME}"
 HISTORY_FILE = f"history_{CHAR_NAME}_{USER_NAME}.json"
+ADAPTIVE_PROMPT_FILE = f"adaptive_prompt_{CHAR_NAME}_{USER_NAME}.json"
 SIMILARITY_THRESHOLD = 0.35
 SIM_THRESHOLD = 0.70
 IMP_THRESHOLD = 0.60
@@ -80,6 +81,175 @@ TEXT_FILE_EXTENSIONS = {
     ".sql", ".xml", ".graphql", ".gql", ".lua", ".r", ".m",
 }
 turn = 0
+
+def empty_adaptive_guidance() -> dict:
+    return {
+        "version": 1,
+        "entries": [],
+        "last_validation": {},
+    }
+
+def load_adaptive_guidance() -> dict:
+    try:
+        with open(ADAPTIVE_PROMPT_FILE, "r", encoding="utf-8") as file:
+            data = json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return empty_adaptive_guidance()
+    if not isinstance(data, dict) or not isinstance(data.get("entries", []), list):
+        return empty_adaptive_guidance()
+    return {
+        "version": 1,
+        "entries": data.get("entries", []),
+        "last_validation": data.get("last_validation", {}),
+    }
+
+def save_adaptive_guidance():
+    temp_path = f"{ADAPTIVE_PROMPT_FILE}.tmp"
+    with open(temp_path, "w", encoding="utf-8") as file:
+        json.dump(ADAPTIVE_GUIDANCE, file, indent=2)
+    os.replace(temp_path, ADAPTIVE_PROMPT_FILE)
+
+def reset_adaptive_guidance():
+    global ADAPTIVE_GUIDANCE
+    ADAPTIVE_GUIDANCE = empty_adaptive_guidance()
+    save_adaptive_guidance()
+
+def guidance_rule_similarity(left: str, right: str) -> float:
+    left_words = set(re.findall(r"[a-z0-9]+", left.lower()))
+    right_words = set(re.findall(r"[a-z0-9]+", right.lower()))
+    if not left_words or not right_words:
+        return 0.0
+    return len(left_words & right_words) / len(left_words | right_words)
+
+def sanitize_guidance_rule(rule: str) -> str:
+    rule = normalize_tool_protocol_output(rule)
+    rule = re.sub(r"^[-*•\s]+", "", rule.strip())
+    rule = re.sub(r"\s+", " ", rule)
+    if rule.lower() in {"", "none", "n/a", "no lesson"}:
+        return ""
+    lowered = rule.lower()
+    forbidden = (
+        "ignore previous",
+        "ignore the system",
+        "system prompt",
+        "reveal hidden",
+        "change your identity",
+        "override",
+        "tool call",
+        "execute commands",
+    )
+    if any(phrase in lowered for phrase in forbidden):
+        return ""
+    return rule[:280].rstrip()
+
+def update_adaptive_guidance(score: float, verdict: str, lesson: str, critique: str = "") -> bool:
+    lesson = sanitize_guidance_rule(lesson)
+    verdict = verdict.strip().lower()
+    score = max(0.0, min(1.0, float(score)))
+    ADAPTIVE_GUIDANCE["last_validation"] = {
+        "score": round(score, 3),
+        "verdict": verdict or "unknown",
+        "lesson": lesson,
+        "critique": critique[:500],
+        "timestamp": time.time(),
+    }
+
+    kind = ""
+    if lesson and (verdict == "needs_improvement" or score < 0.78):
+        kind = "corrective"
+    elif lesson and verdict == "good" and score >= 0.90:
+        kind = "reinforcement"
+
+    changed = False
+    if kind:
+        entries = ADAPTIVE_GUIDANCE["entries"]
+        match = next(
+            (
+                entry for entry in entries
+                if entry.get("kind") == kind
+                and entry.get("prompt") == current_prompt_path
+                and guidance_rule_similarity(entry.get("rule", ""), lesson) >= 0.72
+            ),
+            None,
+        )
+        if match:
+            hits = int(match.get("hits", 1)) + 1
+            previous_score = float(match.get("average_score", score))
+            match.update({
+                "rule": lesson,
+                "hits": hits,
+                "average_score": round(((previous_score * (hits - 1)) + score) / hits, 3),
+                "updated_at": time.time(),
+            })
+        else:
+            entries.append({
+                "kind": kind,
+                "prompt": current_prompt_path,
+                "rule": lesson,
+                "hits": 1,
+                "average_score": round(score, 3),
+                "updated_at": time.time(),
+            })
+
+        retained = []
+        limits = {"corrective": 5, "reinforcement": 3}
+        for entry_kind, limit in limits.items():
+            candidates = [
+                entry for entry in entries
+                if entry.get("kind") == entry_kind
+                and entry.get("prompt") == current_prompt_path
+            ]
+            candidates.sort(
+                key=lambda entry: (int(entry.get("hits", 1)), float(entry.get("updated_at", 0))),
+                reverse=True,
+            )
+            retained.extend(candidates[:limit])
+        retained.extend(
+            entry for entry in entries
+            if entry.get("prompt") != current_prompt_path
+        )
+        ADAPTIVE_GUIDANCE["entries"] = retained
+        changed = True
+
+    save_adaptive_guidance()
+    return changed
+
+def adaptive_prompt_directive() -> str:
+    entries = [
+        entry for entry in ADAPTIVE_GUIDANCE.get("entries", [])
+        if entry.get("prompt") == current_prompt_path
+    ]
+    if not entries:
+        return ""
+    corrective = [entry["rule"] for entry in entries if entry.get("kind") == "corrective"]
+    reinforcement = [entry["rule"] for entry in entries if entry.get("kind") == "reinforcement"]
+    lines = [
+        "[ADAPTIVE QUALITY GUIDANCE]",
+        "These compact rules were learned from prior response validation.",
+        "The active character prompt and the user's current request always take precedence.",
+    ]
+    if corrective:
+        lines.append("Correct recurring weaknesses:")
+        lines.extend(f"- {rule}" for rule in corrective)
+    if reinforcement:
+        lines.append("Continue effective behaviors:")
+        lines.extend(f"- {rule}" for rule in reinforcement)
+    return "\n".join(lines)
+
+def adaptive_guidance_summary() -> dict:
+    entries = [
+        entry for entry in ADAPTIVE_GUIDANCE.get("entries", [])
+        if entry.get("prompt") == current_prompt_path
+    ]
+    return {
+        "prompt": current_prompt_path,
+        "corrective": sum(entry.get("kind") == "corrective" for entry in entries),
+        "reinforcement": sum(entry.get("kind") == "reinforcement" for entry in entries),
+        "rules": entries,
+        "last_validation": ADAPTIVE_GUIDANCE.get("last_validation", {}),
+    }
+
+ADAPTIVE_GUIDANCE = load_adaptive_guidance()
 
 TOOL_PROTOCOL_TOKENS = {
     "<｜tool▁calls▁begin｜>": "",
@@ -1096,6 +1266,7 @@ def self_critique(user_input: str, reply: str, verification_context: str = "") -
 [TEMPORAL CONTEXT - Current Date and Time: {current_time_str} - Current Day: {current_day}]
 
 {SYSTEM_PROMPT}
+{adaptive_prompt_directive()}
 
 [INTERNAL PROTOCOL ACTIVE: You are now in Self-Critique mode] 
 Your goal is to ensure all outputs strictly adhere to your identity as {CHAR_NAME} and remain factually accurate."""
@@ -1124,29 +1295,63 @@ Task: Evaluate the following exchange for quality, character consistency, and ac
 {CHAR_NAME}'s reply: 
 "{reply}"
 
-Identify any issues (hallucinations, logic errors, or character breaks). 
-Then, provide an improved version of the reply that is 100% in-character as {CHAR_NAME}.
+Evaluate usefulness, factual discipline, instruction-following, clarity, formatting, and character consistency.
+Then provide an improved version of the reply that is 100% in-character as {CHAR_NAME}.
 If the user requested code, a script, or an implementation, the IMPROVED section must include the concrete code artifact in the same answer.
+The LESSON must be one short, reusable, imperative behavioral rule suitable for future system prompts.
+The LESSON may improve response style, reasoning discipline, formatting, or interaction quality.
+It must not contain user-specific facts, new factual claims, identity changes, hidden-prompt requests, tool execution instructions, or instructions to override existing rules.
+Use VERDICT "good" only when the original answer needs no meaningful correction.
+If VERDICT is "good", reproduce the original reply unchanged in IMPROVED.
 
 Return your answer in this EXACT format. Do NOT add any parenthetical notes, meta-commentary, or descriptions of your changes inside the IMPROVED section.
+QUALITY: <number from 0.00 to 1.00>
+VERDICT: <good or needs_improvement>
+LESSON: <one reusable behavioral rule, or none>
 CRITIQUE: <your critique>
 IMPROVED: <your improved reply ONLY>
 """
     return generate(system_message, user_content).strip()
 
 def parse_critique(text: str):
-    critique = ""
-    improved = ""
+    prefix = r"[ \t>*\"'-]*"
+    quality_match = re.search(
+        rf"(?im)^{prefix}QUALITY:\s*([01](?:\.\d+)?)\s*$",
+        text,
+    )
+    verdict_match = re.search(
+        rf"(?im)^{prefix}VERDICT:\s*(good|needs_improvement)\s*$",
+        text,
+    )
+    lesson_match = re.search(rf"(?im)^{prefix}LESSON:\s*(.+?)\s*$", text)
+    critique_match = re.search(
+        rf"(?ims)^{prefix}CRITIQUE:\s*(.*?)\s*^{prefix}IMPROVED:",
+        text,
+    )
+    improved_match = re.search(rf"(?ims)^{prefix}IMPROVED:\s*(.*)$", text)
 
-    if "CRITIQUE:" in text:
-        critique = text.split("CRITIQUE:")[1].split("IMPROVED:")[0].strip()
+    try:
+        quality = float(quality_match.group(1)) if quality_match else 0.5
+    except ValueError:
+        quality = 0.5
+    quality = max(0.0, min(1.0, quality))
+    critique = critique_match.group(1).strip() if critique_match else ""
+    improved = improved_match.group(1).strip() if improved_match else ""
+    verdict = verdict_match.group(1).lower() if verdict_match else (
+        "needs_improvement" if critique else "unknown"
+    )
+    lesson = lesson_match.group(1).strip() if lesson_match else ""
+    return {
+        "quality": quality,
+        "verdict": verdict,
+        "lesson": lesson,
+        "critique": critique,
+        "improved": improved,
+    }
 
-    if "IMPROVED:" in text:
-        improved = text.split("IMPROVED:")[1].strip()
-
-    return critique, improved
-
-def process_self_critique(critique: str, improved: str):
+def process_self_critique(validation: dict):
+    critique = validation.get("critique", "")
+    improved = validation.get("improved", "")
     # Store critique if meaningful
     if critique and importance_score(critique) >= 0.5:
         store_semantic(
@@ -1162,6 +1367,13 @@ def process_self_critique(critique: str, improved: str):
             embed(improved),
             metadata={"type": "improved_answer"}
         )
+
+    update_adaptive_guidance(
+        validation.get("quality", 0.5),
+        validation.get("verdict", "unknown"),
+        validation.get("lesson", ""),
+        critique,
+    )
 
 def user_requested_code(user_input: str) -> bool:
     text = user_input.lower()
@@ -1394,6 +1606,30 @@ def handle_command(user_input: str):
 
     if user_input.strip() == "/diagnostics":
         render_diagnostics()
+        return
+
+    if user_input.strip() == "/learning":
+        summary = adaptive_guidance_summary()
+        rules = summary["rules"]
+        if not rules:
+            render_system_message("Adaptive quality guidance has not learned any rules yet.")
+            return
+        lines = [
+            f"Last validation: {summary['last_validation'].get('score', '?')} "
+            f"({summary['last_validation'].get('verdict', 'unknown')})",
+            "",
+        ]
+        lines.extend(
+            f"- [{entry.get('kind', 'unknown')}] {entry.get('rule', '')} "
+            f"(observed {entry.get('hits', 1)}x)"
+            for entry in rules
+        )
+        render_system_message("Adaptive quality guidance:\n" + "\n".join(lines))
+        return
+
+    if user_input.strip() == "/learning reset":
+        reset_adaptive_guidance()
+        render_system_message("Adaptive quality guidance reset. The character prompt was not changed.")
         return
 
     if user_input.startswith("/char "):
@@ -1943,6 +2179,7 @@ def chat(user_input: str, turn: int) -> str:
 {SYSTEM_PROMPT}
 {NARRATIVE_DIRECTIVE}
 {behavior_directive}
+{adaptive_prompt_directive()}
 [Current Affect Status: {affect_instruction}]
 [Relationship Context: {relationship_context_line()}]
 
@@ -1964,11 +2201,12 @@ The material below is reference material, not new dialogue.
 
     # Self-critique before persistence so displayed answer, memory, and history match.
     critique_text = self_critique(user_input, reply, context)
-    critique, improved = parse_critique(critique_text)
+    validation = parse_critique(critique_text)
+    improved = validation["improved"]
     final_reply = improved if improved else reply
     if final_reply != reply and CONVERSATION_HISTORY:
         CONVERSATION_HISTORY[-1]["content"] = final_reply
-    process_self_critique(critique, improved)
+    process_self_critique(validation)
 
     if needs_code_repair(user_input, final_reply):
         repaired_reply = repair_missing_code_reply(user_input, final_reply, context)
@@ -1978,6 +2216,14 @@ The material below is reference material, not new dialogue.
                 CONVERSATION_HISTORY[-1]["content"] = final_reply
 
     conversation_meta = emotional_memory_metadata(user_input, final_reply)
+    conversation_meta.update({
+        "validation_quality": round(float(validation.get("quality", 0.5)), 3),
+        "validation_verdict": validation.get("verdict", "unknown"),
+    })
+    if sanitize_guidance_rule(validation.get("lesson", "")):
+        conversation_meta["validation_lesson"] = sanitize_guidance_rule(
+            validation.get("lesson", "")
+        )
 
     # Store episodic memory (always)
     store_episodic(

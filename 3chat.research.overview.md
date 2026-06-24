@@ -65,7 +65,7 @@ The graphical PoC includes:
 - An image-reading control that sends a local PNG/JPEG/WebP/GIF to LM Studio using the OpenAI-style image message format. This requires the currently loaded local model to support image input.
 - Markdown rendering for assistant replies, including lists, code blocks, tables, and blockquotes.
 - LaTeX math rendering for expressions enclosed in `$...$` or `$$...$$`.
-- A **Reset** button that backs up the current state, history, and memory database under `backups/`, then clears active memories and conversation state while keeping the current character, user, prompt, and greeting.
+- A **Reset** button that backs up the current state, history, memory database, and adaptive quality guidance under `backups/`, then clears active memories, learned guidance, and conversation state while keeping the current character, user, prompt, and greeting.
 
 ## Main External Components
 
@@ -213,6 +213,23 @@ It tracks:
 The assistant detects simple signals in the user's message, such as appreciation, distress, playfulness, correction, or brevity. These signals influence pacing and tone. For example, if the user corrects the assistant, the next reply is guided to briefly acknowledge the correction and adjust course. If the user sounds overwhelmed, the assistant is guided to slow down and offer one manageable next step.
 
 The relationship state is saved in the same state file as the affect layer, so it can persist between sessions.
+
+## Adaptive Quality Guidance
+
+After generating a reply, the assistant already asks the model to validate its own output. That validation now returns:
+
+- A quality score from 0 to 1.
+- A `good` or `needs_improvement` verdict.
+- One short, reusable behavioral lesson.
+- The critique and improved reply.
+
+Low-quality results can create corrective guidance, while consistently strong results can reinforce successful behavior. These learned rules are added to future system prompts as a separate adaptive layer. The original character prompt is never rewritten, and it always takes precedence.
+
+The rules are scoped to the active prompt, deduplicated, and capped at five corrective rules and three reinforcing rules. They are stored in:
+
+`adaptive_prompt_<CHAR_NAME>_<USER_NAME>.json`
+
+Use `/learning` to inspect the active rules and `/learning reset` to clear them without changing the character personality.
 
 ## Character Prompts and Greetings
 
@@ -463,7 +480,7 @@ It asks the model to review the exchange for:
 - Logic errors.
 - Character breaks.
 
-The model is asked to return both a critique and an improved answer. The critique and improved answer may be stored in semantic memory if considered important. The user receives the improved answer if one was produced.
+The model returns a quality score, verdict, reusable lesson, critique, and improved answer. The critique and improved answer may be stored in semantic memory if considered important. Suitable lessons update the bounded adaptive prompt layer, and the user receives the improved answer if one was produced.
 
 ## Data Created by the Program
 

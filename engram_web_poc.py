@@ -32,7 +32,7 @@ HELP_TEXT = """Supported PoC UI actions
 Buttons:
 - Send: send the current message to the assistant.
 - Save: save state and conversation history.
-- Reset: back up current state/history/memory, then clear active memories and conversation state.
+- Reset: back up current state/history/memory/adaptive guidance, then clear them while preserving identity and personality files.
 - Help: show this help panel.
 - Memory preview: include retrieved memories before each reply.
 - Memory > Show: inspect stored memory entries for the selected memory type.
@@ -50,6 +50,8 @@ Supported slash commands in this web PoC:
 - /memory on: enable memory preview.
 - /memory off: disable memory preview.
 - /diagnostics: show affect and relationship diagnostics.
+- /learning: show adaptive rules learned from response validation.
+- /learning reset: clear adaptive rules without changing the character prompt.
 - /help: show this help panel.
 - /save: save state and conversation history.
 - /reset: back up current state/history/memory, then clear active memories and conversation state.
@@ -965,7 +967,9 @@ HTML = r"""<!doctype html>
       document.getElementById("mode").textContent =
         `detail: ${state.relationship?.preferred_detail || "-"}\n` +
         `mode: ${state.relationship?.preferred_mode || "-"}\n` +
-        `last tone: ${state.relationship?.last_user_tone || "-"}`;
+        `last tone: ${state.relationship?.last_user_tone || "-"}\n` +
+        `adaptive rules: ${(state.adaptive?.corrective || 0) + (state.adaptive?.reinforcement || 0)}\n` +
+        `last quality: ${state.adaptive?.last_validation?.score ?? "-"}`;
     }
 
     function formatMeta(meta) {
@@ -1166,7 +1170,7 @@ HTML = r"""<!doctype html>
 
     async function resetEverything() {
       const confirmed = window.confirm(
-        "Back up and clear active conversation history, state, and all three memory collections? Character, user, prompt, and greeting settings will be kept."
+        "Back up and clear conversation history, state, memories, and learned quality guidance? Character, user, prompt, and greeting settings will be kept."
       );
       if (!confirmed) return;
 
@@ -1195,7 +1199,11 @@ HTML = r"""<!doctype html>
       const relationship = Object.entries(state.relationship || {})
         .map(([key, value]) => `${key}: ${value}`)
         .join("\n");
-      return `Affect\n${affect}\n\nRelationship\n${relationship}`;
+      const adaptiveRules = (state.adaptive?.rules || [])
+        .map((entry) => `- [${entry.kind}] ${entry.rule} (${entry.hits || 1}x)`)
+        .join("\n");
+      const validation = state.adaptive?.last_validation || {};
+      return `Affect\n${affect}\n\nRelationship\n${relationship}\n\nAdaptive quality guidance\nLast validation: ${validation.score ?? "-"} (${validation.verdict || "unknown"})\n${adaptiveRules || "No learned rules yet."}`;
     }
 
     async function handleLocalCommand(text) {
@@ -1219,6 +1227,23 @@ HTML = r"""<!doctype html>
         const state = await response.json();
         addMessage("system", diagnosticsText(state));
         renderState(state);
+        return true;
+      }
+      if (command === "/learning") {
+        const response = await fetch("/api/state");
+        const state = await response.json();
+        const rules = (state.adaptive?.rules || [])
+          .map((entry) => `- [${entry.kind}] ${entry.rule} (${entry.hits || 1}x)`)
+          .join("\n");
+        addMessage("system", rules
+          ? `Adaptive quality guidance\n${rules}`
+          : "Adaptive quality guidance has not learned any rules yet.");
+        return true;
+      }
+      if (command === "/learning reset") {
+        const payload = await postJson("/api/learning/reset", {});
+        addMessage("system", "Adaptive quality guidance reset. The character prompt was not changed.");
+        renderState(payload.state);
         return true;
       }
       if (command === "/save" || command === "/quit" || command === "/exit") {
@@ -1255,7 +1280,7 @@ HTML = r"""<!doctype html>
         return true;
       }
       if (command.startsWith("/")) {
-        addMessage("system", "This browser PoC supports /memory on, /memory off, /diagnostics, /help, /save, /reset, /url fetch <url>, /url ingest <url>, /pdf ingest <path>, /text ingest <path>, /image read <path> [:: question], /quit, and /exit. Use the Text / Code file picker for browser ingestion and the terminal version for prompt, lorebook, teach, and skill commands.");
+        addMessage("system", "This browser PoC supports /memory on, /memory off, /diagnostics, /learning, /learning reset, /help, /save, /reset, /url fetch <url>, /url ingest <url>, /pdf ingest <path>, /text ingest <path>, /image read <path> [:: question], /quit, and /exit. Use the Text / Code file picker for browser ingestion and the terminal version for prompt, lorebook, teach, and skill commands.");
         return true;
       }
       return false;
@@ -1377,6 +1402,7 @@ class EngineBridge:
             "model": self.engine.MODEL,
             "affect": self.engine.AFFECT.as_dict(),
             "relationship": self.engine.RELATIONSHIP.as_dict(),
+            "adaptive": self.engine.adaptive_guidance_summary(),
             "memory": memory,
         }
         if include_greeting:
@@ -1409,6 +1435,11 @@ class EngineBridge:
         with self.lock:
             self.engine.save_state()
             self.engine.save_history()
+
+    def reset_learning(self):
+        with self.lock:
+            self.engine.reset_adaptive_guidance()
+            return {"state": self.state()}
 
     def fetch_url(self, url: str):
         with self.lock:
@@ -1452,6 +1483,7 @@ class EngineBridge:
             self.engine.CONVERSATION_HISTORY = []
             self.engine.AFFECT = self.engine.AffectState()
             self.engine.RELATIONSHIP = self.engine.RelationshipState()
+            self.engine.reset_adaptive_guidance()
             self.engine.current_prompt_path = preserved_prompt
             self.engine.current_greeting_path = preserved_greeting
             self.engine.SHOW_MEMORY = False
@@ -1484,6 +1516,7 @@ class EngineBridge:
             APP_DIR / self.engine.STATE_FILE,
             APP_DIR / self.engine.HISTORY_FILE,
             APP_DIR / self.engine.APP_SETTINGS_FILE,
+            APP_DIR / self.engine.ADAPTIVE_PROMPT_FILE,
         ]
         for path in files_to_backup:
             if path.exists():
@@ -1636,6 +1669,12 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/reset":
             try:
                 self._send_json(self.bridge.reset_all())
+            except Exception as exc:
+                self._send_json({"error": str(exc)}, status=500)
+            return
+        if path == "/api/learning/reset":
+            try:
+                self._send_json(self.bridge.reset_learning())
             except Exception as exc:
                 self._send_json({"error": str(exc)}, status=500)
             return
