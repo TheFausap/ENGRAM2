@@ -79,6 +79,7 @@ def normalize_model_markdown(text: str) -> str:
     """Normalize common local coder-model Markdown variations."""
     text = html.unescape(text or "").replace("\r\n", "\n").replace("\r", "\n")
     text = re.sub(r"<think>.*?</think>\s*", "", text, flags=re.DOTALL | re.IGNORECASE)
+    text = normalize_tool_protocol_markup(text)
 
     normalized = []
     fence_open = False
@@ -98,6 +99,51 @@ def normalize_model_markdown(text: str) -> str:
     if fence_open:
         normalized.append("```")
     return "\n".join(normalized)
+
+def normalize_tool_protocol_markup(text: str) -> str:
+    """Renderer fallback for leaked DeepSeek tool-call control tokens."""
+    tool_tokens = {
+        "<｜tool▁calls▁begin｜>": "",
+        "<｜tool▁calls▁end｜>": "",
+        "<｜tool▁call▁begin｜>": "\n",
+        "<｜tool▁call▁end｜>": "\n",
+        "<｜tool▁sep｜>": "\n",
+        "<|tool_calls_begin|>": "",
+        "<|tool_calls_end|>": "",
+        "<|tool_call_begin|>": "\n",
+        "<|tool_call_end|>": "\n",
+        "<|tool_sep|>": "\n",
+    }
+    if not any(token in text for token in tool_tokens):
+        return text
+
+    cleaned = text
+    for token, replacement in tool_tokens.items():
+        cleaned = cleaned.replace(token, replacement)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).strip()
+
+    lines = cleaned.splitlines()
+    if lines and lines[0].strip().lower() in {"function", "tool", "python"}:
+        lines = lines[1:]
+    payload = "\n".join(lines).strip()
+    if not payload or "```" in payload:
+        return payload
+
+    lowered = payload.lower()
+    language = "text"
+    if any(marker in lowered for marker in (
+        "import torch", "torch.", "def ", "self,", "isinstance(", "dtype=torch.",
+    )):
+        language = "python"
+    elif any(marker in lowered for marker in ("const ", "let ", "=>", "console.log(")):
+        language = "javascript"
+    elif payload.lstrip().startswith(("{", "[")):
+        language = "json"
+
+    code_signals = sum(marker in payload for marker in ("\n", "(", ")", ":", "=", "{", "}", ";"))
+    if language != "text" or code_signals >= 4:
+        return f"```{language}\n{payload}\n```"
+    return payload
 
 
 def render_math_delimiters(text: str) -> str:

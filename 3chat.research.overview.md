@@ -60,7 +60,8 @@ The graphical PoC includes:
 - A **Help** button that lists supported browser commands and reminds the presenter which extra commands are available in the terminal version.
 - A **Memory** selector for episodic, semantic, and procedural memories.
 - A **Show** button that displays stored memory entries with partial content, metadata, and the first few vector dimensions.
-- A **Knowledge** panel that can fetch a specific URL, ingest a URL into semantic memory, or ingest a local PDF path into semantic memory.
+- A **Knowledge** panel that can fetch a specific URL, ingest a URL into semantic memory, ingest a local PDF path, or select a local text/source-code file for semantic-memory ingestion.
+- The text/code picker supports common documentation, data, configuration, web, shell, and programming-language extensions. Files are read locally in the browser, validated by the server, split into chunks, and tagged with their filename and detected language.
 - An image-reading control that sends a local PNG/JPEG/WebP/GIF to LM Studio using the OpenAI-style image message format. This requires the currently loaded local model to support image input.
 - Markdown rendering for assistant replies, including lists, code blocks, tables, and blockquotes.
 - LaTeX math rendering for expressions enclosed in `$...$` or `$$...$$`.

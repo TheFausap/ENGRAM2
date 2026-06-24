@@ -81,6 +81,56 @@ TEXT_FILE_EXTENSIONS = {
 }
 turn = 0
 
+TOOL_PROTOCOL_TOKENS = {
+    "<｜tool▁calls▁begin｜>": "",
+    "<｜tool▁calls▁end｜>": "",
+    "<｜tool▁call▁begin｜>": "\n",
+    "<｜tool▁call▁end｜>": "\n",
+    "<｜tool▁sep｜>": "\n",
+    "<|tool_calls_begin|>": "",
+    "<|tool_calls_end|>": "",
+    "<|tool_call_begin|>": "\n",
+    "<|tool_call_end|>": "\n",
+    "<|tool_sep|>": "\n",
+}
+
+def infer_code_language(text: str) -> str:
+    lowered = text.lower()
+    if any(marker in lowered for marker in (
+        "import torch", "torch.", "def ", "self,", "isinstance(", "dtype=torch.",
+    )):
+        return "python"
+    if any(marker in lowered for marker in ("const ", "let ", "=>", "console.log(")):
+        return "javascript"
+    if any(marker in lowered for marker in ("#include ", "std::", "public static void main")):
+        return "cpp"
+    if text.lstrip().startswith(("{", "[")):
+        return "json"
+    return "text"
+
+def normalize_tool_protocol_output(text: str) -> str:
+    """Recover readable content when a model leaks DeepSeek tool protocol tokens."""
+    if not text or not any(token in text for token in TOOL_PROTOCOL_TOKENS):
+        return text or ""
+
+    cleaned = text
+    for token, replacement in TOOL_PROTOCOL_TOKENS.items():
+        cleaned = cleaned.replace(token, replacement)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).strip()
+
+    lines = cleaned.splitlines()
+    if lines and lines[0].strip().lower() in {"function", "tool", "python"}:
+        lines = lines[1:]
+    payload = "\n".join(lines).strip()
+    if not payload or "```" in payload:
+        return payload
+
+    language = infer_code_language(payload)
+    code_signals = sum(marker in payload for marker in ("\n", "(", ")", ":", "=", "{", "}", ";"))
+    if language != "text" or code_signals >= 4:
+        return f"```{language}\n{payload}\n```"
+    return payload
+
 class PageTextExtractor(HTMLParser):
     def __init__(self):
         super().__init__()
@@ -370,6 +420,7 @@ def conversational_behavior_directive(user_input: str) -> str:
 - Curiosity: Ask no more than one follow-up question unless the user explicitly invites exploration.
 - Code Delivery: If the user asks for code, a script, a patch, or an implementation, include the actual code or concrete patch in this same response. Do not say you will provide code later.
 - Code Formatting: Put code in a fenced Markdown block with the correct language name, such as ```python. Keep prose outside the code fence.
+- Tool Protocol: Do not emit model-specific control tokens such as tool-call begin, tool-call separator, or tool-call end tokens. This application does not execute those tokens. Present function examples and code as ordinary fenced Markdown.
 - Speaker Identity: Address the current user directly as {USER_NAME}. Never describe something as having been said by {USER_NAME} when it came from an assistant reply or a retrieved memory.
 - Boundaries: If uncertainty, discomfort, or high-stakes factual claims appear, slow down and make uncertainty visible.
 """.strip()
@@ -657,7 +708,7 @@ def generate_ollama(system_msg: str, user_input:str, model: str = MODEL) -> str:
         }
     )
     data = response.json()
-    return data['message']['content']
+    return normalize_tool_protocol_output(data['message'].get('content') or "")
     
 def generate(system_msg: str, user_input: str, model: str = MODEL) -> str:
     try:
@@ -676,7 +727,7 @@ def generate(system_msg: str, user_input: str, model: str = MODEL) -> str:
         )
         response.raise_for_status()
         data = response.json()
-        return data['choices'][0]['message']['content']
+        return normalize_tool_protocol_output(data['choices'][0]['message'].get('content') or "")
     except Exception as e:
         return f"Error connecting to LM Studio: {e}"
 
@@ -738,7 +789,9 @@ def analyze_image(path: str, question: str = "", model: str = MODEL) -> dict:
         )
         response.raise_for_status()
         data = response.json()
-        analysis = data["choices"][0]["message"]["content"]
+        analysis = normalize_tool_protocol_output(
+            data["choices"][0]["message"].get("content") or ""
+        )
     except Exception as e:
         analysis = (
             "Image analysis failed. The current LM Studio model may not support vision/image input, "
@@ -1792,7 +1845,7 @@ def generate_with_history(system_msg: str, messages: list[dict], model: str = MO
         )
         response.raise_for_status()
         data = response.json()
-        return data['choices'][0]['message']['content']
+        return normalize_tool_protocol_output(data['choices'][0]['message'].get('content') or "")
     except Exception as e:
         return f"Error connecting to LM Studio: {e}"
 
