@@ -40,7 +40,7 @@ Buttons:
 - Knowledge > Ingest URL: store extracted page/PDF URL text as semantic memory chunks.
 - Knowledge > Ingest PDF: store extracted local PDF text as semantic memory chunks.
 - Knowledge > Ingest Text / Code: select a local text or source-code file and store it as semantic memory chunks.
-- Knowledge > Read Image: analyze a local PNG/JPEG/WebP/GIF through the configured vision-capable OpenAI-compatible model.
+- Knowledge > Read Image: analyze a local PNG/JPEG/WebP/GIF through the configured vision-capable OpenAI-compatible model, store the visual observation, and pass it to the next chat turn.
 
 Message box shortcuts:
 - Enter: send.
@@ -968,6 +968,7 @@ HTML = r"""<!doctype html>
         `detail: ${state.relationship?.preferred_detail || "-"}\n` +
         `mode: ${state.relationship?.preferred_mode || "-"}\n` +
         `last tone: ${state.relationship?.last_user_tone || "-"}\n` +
+        `pending visual: ${state.pending_visual_observations ?? 0}\n` +
         `adaptive rules: ${(state.adaptive?.corrective || 0) + (state.adaptive?.reinforcement || 0)}\n` +
         `last quality: ${state.adaptive?.last_validation?.score ?? "-"}`;
     }
@@ -1161,6 +1162,16 @@ HTML = r"""<!doctype html>
           "system",
           `Image metadata: ${meta.filename || path} | ${meta.width || "?"}x${meta.height || "?"} | ${meta.format || "unknown"}`
         );
+        if (payload.memory?.stored) {
+          addMessage(
+            "system",
+            "Stored visual observation in semantic memory and queued it for the next chat turn."
+          );
+        }
+        if (payload.state) {
+          renderState(payload.state);
+          fetchMemory();
+        }
       } catch (error) {
         addMessage("system", String(error));
       } finally {
@@ -1408,6 +1419,7 @@ class EngineBridge:
             "vision_model": self.engine.VISION_MODEL,
             "backend": self.engine.URL,
             "vision_backend": self.engine.VISION_URL,
+            "pending_visual_observations": len(self.engine.PENDING_VISUAL_OBSERVATIONS),
             "affect": self.engine.AFFECT.as_dict(),
             "relationship": self.engine.RELATIONSHIP.as_dict(),
             "adaptive": self.engine.adaptive_guidance_summary(),
@@ -1474,6 +1486,7 @@ class EngineBridge:
             return {
                 **result,
                 "analysis_html": render_model_text(result.get("analysis", "")),
+                "state": self.state(),
             }
 
     def reset_all(self):
@@ -1496,6 +1509,7 @@ class EngineBridge:
             self.engine.current_greeting_path = preserved_greeting
             self.engine.SHOW_MEMORY = False
             self.engine.active_lorebook = None
+            self.engine.PENDING_VISUAL_OBSERVATIONS.clear()
             self.turn = 0
 
             raw_prompt = self.engine.load_system_prompt(self.engine.current_prompt_path)

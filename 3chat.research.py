@@ -81,6 +81,9 @@ URL_CONTEXT_LIMIT = 12000
 INGEST_CHUNK_CHARS = 1200
 INGEST_CHUNK_OVERLAP = 160
 MAX_TEXT_INGEST_CHARS = 5_000_000
+VISUAL_OBSERVATION_MAX_CHARS = 6000
+MAX_PENDING_VISUAL_OBSERVATIONS = 3
+PENDING_VISUAL_OBSERVATIONS: list[dict] = []
 TEXT_FILE_EXTENSIONS = {
     ".txt", ".md", ".rst", ".log", ".csv", ".tsv",
     ".py", ".pyw", ".ipynb",
@@ -1146,6 +1149,7 @@ def analyze_image(path: str, question: str = "", model: str = "") -> dict:
         "Do not invent labels or values that are not visible; say when something is unreadable."
     )
 
+    active_model = requested_model
     try:
         active_model = resolve_served_model(
             requested_model,
@@ -1175,10 +1179,21 @@ def analyze_image(path: str, question: str = "", model: str = "") -> dict:
     except Exception as e:
         analysis = image_backend_failure_message(e, requested_model, VISION_URL)
 
-    return {
+    result = {
         "analysis": analysis,
         "metadata": metadata,
+        "vision_backend": VISION_URL,
+        "vision_model": active_model,
     }
+    try:
+        result["memory"] = remember_visual_observation(result, question=question)
+    except Exception as e:
+        result["memory"] = {
+            "stored": False,
+            "pending": False,
+            "reason": f"memory_store_failed: {e}",
+        }
+    return result
 
 def store_episodic(text: str, vector: list[float], metadata=None):
     meta = dict(metadata) if metadata else {}
@@ -1210,6 +1225,92 @@ def store_procedural(text: str, vector: list[float], metadata=None):
         documents=[text],
         embeddings=[vector],
         metadatas=[metadata or {"type": "procedure"}]
+    )
+
+def compact_context_text(text: str, max_chars: int) -> str:
+    text = (text or "").strip()
+    if len(text) <= max_chars:
+        return text
+    return text[:max_chars].rstrip() + "\n...[truncated]"
+
+def image_analysis_was_successful(analysis: str) -> bool:
+    return bool(analysis and not analysis.lstrip().lower().startswith("image analysis failed."))
+
+def format_visual_observation(
+    analysis: str,
+    metadata: dict,
+    question: str = "",
+    vision_model: str = "",
+    vision_backend: str = "",
+) -> str:
+    filename = metadata.get("filename") or metadata.get("path") or "image"
+    dimensions = f"{metadata.get('width', '?')}x{metadata.get('height', '?')}"
+    header = [
+        "[Visual observation from image analysis]",
+        f"Image: {filename}",
+        f"Dimensions: {dimensions}",
+        f"Format: {metadata.get('format', 'unknown')} | MIME: {metadata.get('mime_type', 'unknown')}",
+        f"Vision backend: {vision_backend or VISION_URL}",
+        f"Vision model: {vision_model or VISION_MODEL}",
+    ]
+    if question.strip():
+        header.append(f"User question for image: {question.strip()}")
+    header.append("Observation:")
+    return "\n".join(header) + "\n" + compact_context_text(analysis, VISUAL_OBSERVATION_MAX_CHARS)
+
+def remember_visual_observation(result: dict, question: str = "") -> dict:
+    analysis = result.get("analysis", "")
+    metadata = result.get("metadata", {}) or {}
+    if not image_analysis_was_successful(analysis):
+        return {"stored": False, "pending": False, "reason": "analysis_failed"}
+
+    observation = format_visual_observation(
+        analysis,
+        metadata,
+        question=question,
+        vision_model=result.get("vision_model", VISION_MODEL),
+        vision_backend=result.get("vision_backend", VISION_URL),
+    )
+    ts = time.time()
+    readable_time = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M')
+    memory_meta = {
+        "source": "visual_observation",
+        "type": "image_analysis",
+        "filename": str(metadata.get("filename", "")),
+        "path": str(metadata.get("path", "")),
+        "mime_type": str(metadata.get("mime_type", "")),
+        "width": int(metadata.get("width", 0) or 0),
+        "height": int(metadata.get("height", 0) or 0),
+        "question": question.strip(),
+        "vision_backend": str(result.get("vision_backend", VISION_URL)),
+        "vision_model": str(result.get("vision_model", VISION_MODEL)),
+        "datestring": readable_time,
+        "timestamp": ts,
+    }
+    store_semantic(observation, embed(observation), metadata=memory_meta)
+    PENDING_VISUAL_OBSERVATIONS.append({
+        "text": observation,
+        "metadata": memory_meta,
+    })
+    del PENDING_VISUAL_OBSERVATIONS[:-MAX_PENDING_VISUAL_OBSERVATIONS]
+    return {
+        "stored": True,
+        "pending": True,
+        "observation": observation,
+        "metadata": memory_meta,
+    }
+
+def consume_pending_visual_context() -> str:
+    if not PENDING_VISUAL_OBSERVATIONS:
+        return ""
+    observations = list(PENDING_VISUAL_OBSERVATIONS)
+    PENDING_VISUAL_OBSERVATIONS.clear()
+    return (
+        "--- RECENT VISUAL OBSERVATIONS ---\n"
+        "The following image analyses were produced by the configured vision model. "
+        "Use them as factual visual context for the current reply. The main chat model did not see the raw pixels.\n\n"
+        + "\n\n".join(item["text"] for item in observations)
+        + "\n\n"
     )
 
 def ingest_document(text: str):
@@ -1982,6 +2083,10 @@ def handle_command(user_input: str):
                 f"Image read: {meta['filename']} ({meta['width']}x{meta['height']}, {meta['format']})\n\n"
                 f"{result['analysis']}"
             )
+            if result.get("memory", {}).get("stored"):
+                render_system_message(
+                    "Stored visual observation in semantic memory and queued it for the next chat turn."
+                )
         except Exception as e:
             render_system_message(f"Image read error: {e}")
         return
@@ -2304,6 +2409,9 @@ def chat(user_input: str, turn: int) -> str:
     proc = recall_procedural(user_input, embed, top_k=5)
 
     context = ""
+    visual_context = consume_pending_visual_context()
+    if visual_context:
+        context += visual_context
 
     if sem:
         context += "Semantic memories:\n" + "\n".join(f"- {m}" for m in sem) + "\n\n"
