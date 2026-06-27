@@ -1000,7 +1000,7 @@ def generate(system_msg: str, user_input: str, model: str = MODEL) -> str:
                 {"role": "system", "content": system_msg},
                 {"role": "user", "content": user_input},
             ],
-            temperature=0.7,
+            temperature=0.6,
             timeout=300,
             model=model,
         )
