@@ -8,7 +8,7 @@ This document explains what is implemented in `3chat.research.py` in plain langu
 
 At a high level, it:
 
-- Talks to a local AI model served by LM Studio, with optional older support for Ollama.
+- Talks to a local OpenAI-compatible AI model server, such as vLLM or LM Studio, with optional older support for Ollama.
 - Stores and retrieves memories using ChromaDB.
 - Splits memory into three types: factual knowledge, remembered events, and learned procedures.
 - Loads a character prompt and greeting from local files.
@@ -62,7 +62,7 @@ The graphical PoC includes:
 - A **Show** button that displays stored memory entries with partial content, metadata, and the first few vector dimensions.
 - A **Knowledge** panel that can fetch a specific URL, ingest a URL into semantic memory, ingest a local PDF path, or select a local text/source-code file for semantic-memory ingestion.
 - The text/code picker supports common documentation, data, configuration, web, shell, and programming-language extensions. Files are read locally in the browser, validated by the server, split into chunks, and tagged with their filename and detected language.
-- An image-reading control that sends a local PNG/JPEG/WebP/GIF to LM Studio using the OpenAI-style image message format. This requires the currently loaded local model to support image input.
+- An image-reading control that sends a local PNG/JPEG/WebP/GIF to a configured vision-capable OpenAI-compatible model using the OpenAI-style image message format. This can use a separate backend URL from the main chat model, so the coder model and the vision model can run on different hardware.
 - Markdown rendering for assistant replies, including lists, code blocks, tables, and blockquotes.
 - LaTeX math rendering for expressions enclosed in `$...$` or `$$...$$`.
 - A **Reset** button that backs up the current state, history, memory database, and adaptive quality guidance under `backups/`, then clears active memories, learned guidance, and conversation state while keeping the current character, user, prompt, and greeting.
@@ -72,8 +72,9 @@ The graphical PoC includes:
 The file depends on several external tools and libraries:
 
 - **OpenAI-compatible model server**: The main chat backend can be vLLM, LM Studio, or another compatible server. It defaults to `http://localhost:8000/v1` and can be changed with `ENGRAM_BASE_URL`.
-- **Automatic model discovery**: ENGRAM reads `/v1/models` and uses the exact model identifier reported by the backend. `ENGRAM_MODEL` may select a particular model when the server exposes more than one.
-- **Ollama**: There is a separate function for Ollama at `http://localhost:11434`, though the main chat path uses LM Studio.
+- **Separate vision backend**: Image analysis can use a different OpenAI-compatible server through `ENGRAM_VISION_BASE_URL`. This is useful when the main GPU server is fully occupied by a coder model and a vision model must run elsewhere.
+- **Automatic model discovery**: ENGRAM reads `/v1/models` and uses the exact model identifier reported by the backend. `ENGRAM_MODEL` may select a particular chat model when the server exposes more than one. `ENGRAM_VISION_MODEL` may select a particular vision model on the vision backend.
+- **Ollama**: There is a separate function for Ollama at `http://localhost:11434`, though the main chat path uses the OpenAI-compatible backend.
 - **ChromaDB**: Stores long-term memories in a local vector database.
 - **Sentence Transformers**: Converts text into numerical representations so memories can be searched by meaning, not only by exact words.
 - **DuckDuckGo search through `ddgs`**: Used for web lookups.
@@ -506,7 +507,7 @@ This file is a research prototype, so a few rough edges are visible.
 
 1. **It depends heavily on local services.**
 
-   An OpenAI-compatible model backend must be reachable. The default is `http://localhost:8000/v1`; use `ENGRAM_BASE_URL` to point to a tunnel or another server. The model name is discovered from `/v1/models`.
+   An OpenAI-compatible model backend must be reachable. The default is `http://localhost:8000/v1`; use `ENGRAM_BASE_URL` to point to a tunnel or another server. The model name is discovered from `/v1/models`. Image analysis can optionally use a separate backend through `ENGRAM_VISION_BASE_URL` and `ENGRAM_VISION_MODEL`.
 
 2. **Each normal message can trigger many model calls.**
 

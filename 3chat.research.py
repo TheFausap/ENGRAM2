@@ -40,11 +40,19 @@ URL = os.environ.get(
     os.environ.get("OPENAI_BASE_URL", "http://localhost:8000/v1"),
 ).rstrip("/")
 MODEL = os.environ.get("ENGRAM_MODEL", "auto").strip() or "auto"
+VISION_URL = os.environ.get(
+    "ENGRAM_VISION_BASE_URL",
+    os.environ.get("OPENAI_VISION_BASE_URL", URL),
+).rstrip("/")
+VISION_MODEL = os.environ.get("ENGRAM_VISION_MODEL", MODEL).strip() or MODEL
 API_KEY = os.environ.get("ENGRAM_API_KEY", os.environ.get("OPENAI_API_KEY", "")).strip()
 BASIC_AUTH_USER = os.environ.get("ENGRAM_BASIC_AUTH_USER", "").strip()
 BASIC_AUTH_PASSWORD = os.environ.get("ENGRAM_BASIC_AUTH_PASSWORD", "")
+VISION_API_KEY = os.environ.get("ENGRAM_VISION_API_KEY", API_KEY).strip()
+VISION_BASIC_AUTH_USER = os.environ.get("ENGRAM_VISION_BASIC_AUTH_USER", BASIC_AUTH_USER).strip()
+VISION_BASIC_AUTH_PASSWORD = os.environ.get("ENGRAM_VISION_BASIC_AUTH_PASSWORD", BASIC_AUTH_PASSWORD)
 OLLAMA_URL = os.environ.get("ENGRAM_OLLAMA_URL", "http://localhost:11434").rstrip("/")
-_SERVED_MODELS_CACHE: list[str] | None = None
+_SERVED_MODELS_CACHE: dict[str, list[str]] = {}
 APP_SETTINGS_FILE = "app_settings.json"
 
 def load_app_settings():
@@ -869,23 +877,34 @@ def ingest_text_file(path: str) -> dict:
         text = file.read(MAX_TEXT_INGEST_CHARS + 1)
     return ingest_text_content(text, os.path.basename(path), source=f"text-file:{path}")
 
-def openai_request_kwargs() -> dict:
+def openai_request_kwargs(
+    api_key: str = "",
+    basic_auth_user: str = "",
+    basic_auth_password: str = "",
+) -> dict:
     kwargs = {"headers": {"Content-Type": "application/json"}}
-    if API_KEY:
-        kwargs["headers"]["Authorization"] = f"Bearer {API_KEY}"
-    if BASIC_AUTH_USER:
-        kwargs["auth"] = (BASIC_AUTH_USER, BASIC_AUTH_PASSWORD)
+    if api_key:
+        kwargs["headers"]["Authorization"] = f"Bearer {api_key}"
+    if basic_auth_user:
+        kwargs["auth"] = (basic_auth_user, basic_auth_password)
     return kwargs
 
-def list_served_models(force_refresh=False) -> list[str]:
-    global _SERVED_MODELS_CACHE
-    if _SERVED_MODELS_CACHE is not None and not force_refresh:
-        return list(_SERVED_MODELS_CACHE)
+def backend_credentials(base_url: str) -> tuple[str, str, str]:
+    if base_url.rstrip("/") == VISION_URL and VISION_URL != URL:
+        return VISION_API_KEY, VISION_BASIC_AUTH_USER, VISION_BASIC_AUTH_PASSWORD
+    return API_KEY, BASIC_AUTH_USER, BASIC_AUTH_PASSWORD
+
+def list_served_models(force_refresh=False, base_url: str = "") -> list[str]:
+    base_url = (base_url or URL).rstrip("/")
+    if base_url in _SERVED_MODELS_CACHE and not force_refresh:
+        return list(_SERVED_MODELS_CACHE[base_url])
+
+    api_key, basic_user, basic_password = backend_credentials(base_url)
 
     response = requests.get(
-        f"{URL}/models",
+        f"{base_url}/models",
         timeout=15,
-        **openai_request_kwargs(),
+        **openai_request_kwargs(api_key, basic_user, basic_password),
     )
     response.raise_for_status()
     payload = response.json()
@@ -895,8 +914,8 @@ def list_served_models(force_refresh=False) -> list[str]:
         if isinstance(item, dict) and str(item.get("id", "")).strip()
     ]
     if not models:
-        raise RuntimeError(f"No models were reported by {URL}/models.")
-    _SERVED_MODELS_CACHE = models
+        raise RuntimeError(f"No models were reported by {base_url}/models.")
+    _SERVED_MODELS_CACHE[base_url] = models
     return list(models)
 
 def match_served_model(requested: str, served_models: list[str]) -> str | None:
@@ -924,35 +943,60 @@ def match_served_model(requested: str, served_models: list[str]) -> str | None:
     ]
     return tail_matches[0] if len(tail_matches) == 1 else None
 
-def resolve_served_model(requested: str = "", force_refresh=False) -> str:
-    global MODEL
-    served_models = list_served_models(force_refresh=force_refresh)
-    matched = match_served_model(requested or MODEL, served_models)
+def resolve_served_model(
+    requested: str = "",
+    force_refresh=False,
+    base_url: str = "",
+    role: str = "chat",
+) -> str:
+    global MODEL, VISION_MODEL
+    base_url = (base_url or URL).rstrip("/")
+    default_model = VISION_MODEL if role == "vision" else MODEL
+    served_models = list_served_models(force_refresh=force_refresh, base_url=base_url)
+    matched = match_served_model(requested or default_model, served_models)
     if matched:
-        MODEL = matched
+        if role == "vision":
+            VISION_MODEL = matched
+        elif base_url == URL:
+            MODEL = matched
         return matched
     if len(served_models) == 1:
-        MODEL = served_models[0]
-        return MODEL
+        if role == "vision":
+            VISION_MODEL = served_models[0]
+            return VISION_MODEL
+        if base_url == URL:
+            MODEL = served_models[0]
+            return MODEL
+        return served_models[0]
     raise RuntimeError(
-        f"Configured model '{requested or MODEL}' is not served by the backend. "
+        f"Configured model '{requested or default_model}' is not served by {base_url}. "
         f"Available models: {', '.join(served_models)}"
     )
 
-def chat_completion(messages: list[dict], temperature=0.7, timeout=300, model: str = "") -> dict:
-    requested_model = model or MODEL
+def chat_completion(
+    messages: list[dict],
+    temperature=0.7,
+    timeout=300,
+    model: str = "",
+    base_url: str = "",
+    role: str = "chat",
+) -> dict:
+    base_url = (base_url or URL).rstrip("/")
+    requested_model = model or (VISION_MODEL if role == "vision" else MODEL)
     try:
-        active_model = resolve_served_model(requested_model)
+        active_model = resolve_served_model(requested_model, base_url=base_url, role=role)
     except requests.HTTPError as exc:
         status = exc.response.status_code if exc.response is not None else "unknown"
         if status == 401:
             raise RuntimeError(
-                f"{URL}/models requires authentication. Set "
-                "ENGRAM_BASIC_AUTH_USER and ENGRAM_BASIC_AUTH_PASSWORD for an HTTP Basic proxy, "
-                "or ENGRAM_API_KEY for bearer authentication."
+                f"{base_url}/models requires authentication. Set "
+                "ENGRAM_BASIC_AUTH_USER and ENGRAM_BASIC_AUTH_PASSWORD, or ENGRAM_API_KEY, "
+                "for the chat backend. For the vision backend, use ENGRAM_VISION_BASIC_AUTH_USER, "
+                "ENGRAM_VISION_BASIC_AUTH_PASSWORD, or ENGRAM_VISION_API_KEY."
             ) from exc
         raise
 
+    api_key, basic_user, basic_password = backend_credentials(base_url)
     payload = {
         "model": active_model,
         "messages": messages,
@@ -960,23 +1004,80 @@ def chat_completion(messages: list[dict], temperature=0.7, timeout=300, model: s
         "stream": False,
     }
     response = requests.post(
-        f"{URL}/chat/completions",
+        f"{base_url}/chat/completions",
         json=payload,
         timeout=timeout,
-        **openai_request_kwargs(),
+        **openai_request_kwargs(api_key, basic_user, basic_password),
     )
 
     if response.status_code == 404 and "does not exist" in response.text.lower():
-        payload["model"] = resolve_served_model(requested_model, force_refresh=True)
+        payload["model"] = resolve_served_model(
+            requested_model,
+            force_refresh=True,
+            base_url=base_url,
+            role=role,
+        )
         response = requests.post(
-            f"{URL}/chat/completions",
+            f"{base_url}/chat/completions",
             json=payload,
             timeout=timeout,
-            **openai_request_kwargs(),
+            **openai_request_kwargs(api_key, basic_user, basic_password),
         )
 
     response.raise_for_status()
     return response.json()
+
+def backend_http_error_details(exc: Exception) -> str:
+    if not isinstance(exc, requests.HTTPError) or exc.response is None:
+        return str(exc)
+
+    response = exc.response
+    detail = response.text.strip()
+    if len(detail) > 700:
+        detail = detail[:700].rstrip() + "..."
+    if detail:
+        return f"{response.status_code} {response.reason}: {detail}"
+    return f"{response.status_code} {response.reason}"
+
+def model_name_suggests_vision(model_name: str) -> bool:
+    lowered = (model_name or "").lower()
+    vision_markers = (
+        "vision",
+        "vl",
+        "v-l",
+        "llava",
+        "pixtral",
+        "molmo",
+        "minicpm-v",
+        "qwen-vl",
+        "qwen2-vl",
+        "qwen2.5-vl",
+        "llama-3.2-11b",
+        "llama-3.2-90b",
+        "gpt-4o",
+        "gemini",
+    )
+    return any(marker in lowered for marker in vision_markers)
+
+def image_backend_failure_message(exc: Exception, active_model: str, backend_url: str = "") -> str:
+    details = backend_http_error_details(exc)
+    backend_url = (backend_url or VISION_URL).rstrip("/")
+    hints = [
+        "Image analysis failed.",
+        f"Backend: {backend_url}",
+        f"Model used for image analysis: {active_model or VISION_MODEL or MODEL}",
+    ]
+    if not model_name_suggests_vision(active_model):
+        hints.append(
+            "This model name does not look vision-capable. A text/code model such as "
+            "Qwen3-Coder can answer normally in vLLM but reject image_url payloads."
+        )
+    hints.append(
+        "Serve a vision model in vLLM, for example a Qwen-VL/LLaVA/Pixtral-style model, "
+        "then set ENGRAM_VISION_BASE_URL and ENGRAM_VISION_MODEL to that server and model id."
+    )
+    hints.append(f"Backend error: {details}")
+    return "\n".join(hints)
 
 def generate_ollama(system_msg: str, user_input:str, model: str = MODEL) -> str:
     response = requests.post(
@@ -1032,8 +1133,9 @@ def image_to_data_url(path: str) -> tuple[str, dict]:
 
     return f"data:{mime_type};base64,{encoded}", metadata
 
-def analyze_image(path: str, question: str = "", model: str = MODEL) -> dict:
+def analyze_image(path: str, question: str = "", model: str = "") -> dict:
     data_url, metadata = image_to_data_url(path)
+    requested_model = model or VISION_MODEL or MODEL
     prompt = question.strip() or (
         "Read this image carefully. If it is a graph or chart, describe the axes, title, "
         "visible trends, important values, anomalies, and any caveats. If text is visible, "
@@ -1045,6 +1147,11 @@ def analyze_image(path: str, question: str = "", model: str = MODEL) -> dict:
     )
 
     try:
+        active_model = resolve_served_model(
+            requested_model,
+            base_url=VISION_URL,
+            role="vision",
+        )
         data = chat_completion(
             [
                 {"role": "system", "content": system_msg},
@@ -1058,16 +1165,15 @@ def analyze_image(path: str, question: str = "", model: str = MODEL) -> dict:
             ],
             temperature=0.2,
             timeout=300,
-            model=model,
+            model=active_model,
+            base_url=VISION_URL,
+            role="vision",
         )
         analysis = normalize_tool_protocol_output(
             data["choices"][0]["message"].get("content") or ""
         )
     except Exception as e:
-        analysis = (
-            "Image analysis failed. The current LM Studio model may not support vision/image input, "
-            f"or LM Studio rejected the image payload. Error: {e}"
-        )
+        analysis = image_backend_failure_message(e, requested_model, VISION_URL)
 
     return {
         "analysis": analysis,

@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "kind": "corrective",
+      "prompt": "codex.txt",
+      "rule": "Always verify that code examples use only documented API signatures and methods\u2014never assume method names or argument patterns\u2014even if they feel intuitively correct.",
+      "hits": 1,
+      "average_score": 0.78,
+      "updated_at": 1782571040.904463
+    },
+    {
+      "kind": "reinforcement",
+      "prompt": "codex.txt",
+      "rule": "When diagnosing `KeyError` for hook names, always prioritize `utils.get_act_name()` over manual string formatting to ensure compatibility with version-specific naming conventions in TransformerLens.",
+      "hits": 1,
+      "average_score": 0.95,
+      "updated_at": 1782571851.8715641
+    },
+    {
+      "kind": "reinforcement",
+      "prompt": "codex.txt",
+      "rule": "When diagnosing `TypeError: forward() got an unexpected keyword argument`, always verify the *current* method signature of the library version in use\u2014especially after version upgrades\u2014and avoid assuming deprecated or renamed parameters like `hook_dict` remain valid.",
+      "hits": 1,
+      "average_score": 0.96,
+      "updated_at": 1782571642.435251
+    },
+    {
+      "kind": "reinforcement",
+      "prompt": "codex.txt",
+      "rule": "When diagnosing import-time `AttributeError`s involving deprecated or renamed symbols (e.g., `PyExtensionType` \u2192 `ExtensionType`), prioritize version compatibility as the root cause and provide actionable, version-specific pip commands\u2014especially when the error originates from tr",
+      "hits": 1,
+      "average_score": 0.92,
+      "updated_at": 1782571356.7420878
+    }
+  ],
+  "last_validation": {
+    "score": 0.95,
+    "verdict": "good",
+    "lesson": "When diagnosing `KeyError` for hook names, always prioritize `utils.get_act_name()` over manual string formatting to ensure compatibility with version-specific naming conventions in TransformerLens.",
+    "critique": "The reply is excellent\u2014accurate, warm, and technically precise. It correctly diagnoses the `KeyError` as a naming convention mismatch, explains *why* `f\"resid_post.{layer}\"` fails (version-specific naming), and provides the canonical fix using `utils.get_act_name()`. It also smartly updates the hook function to use `hook.name` for robustness, which is a subtle but important improvement. The tone remains collaborative and energized without overpromising (\u201cLet\u2019s see if the functor emerges!\u201d). All ",
+    "timestamp": 1782571851.8714821
+  }
+}

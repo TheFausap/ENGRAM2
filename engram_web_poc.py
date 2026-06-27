@@ -40,7 +40,7 @@ Buttons:
 - Knowledge > Ingest URL: store extracted page/PDF URL text as semantic memory chunks.
 - Knowledge > Ingest PDF: store extracted local PDF text as semantic memory chunks.
 - Knowledge > Ingest Text / Code: select a local text or source-code file and store it as semantic memory chunks.
-- Knowledge > Read Image: analyze a local PNG/JPEG/WebP/GIF through the current LM Studio model.
+- Knowledge > Read Image: analyze a local PNG/JPEG/WebP/GIF through the configured vision-capable OpenAI-compatible model.
 
 Message box shortcuts:
 - Enter: send.
@@ -950,7 +950,7 @@ HTML = r"""<!doctype html>
     function renderState(state) {
       window.characterName = state.character || "Assistant";
       document.getElementById("subtitle").textContent = `${state.character} with ${state.user}`;
-      document.getElementById("identity").textContent = `character: ${state.character}\nuser: ${state.user}\nprompt: ${state.prompt}\nbackend: ${state.backend || "-"}\nmodel: ${state.model}`;
+      document.getElementById("identity").textContent = `character: ${state.character}\nuser: ${state.user}\nprompt: ${state.prompt}\nbackend: ${state.backend || "-"}\nmodel: ${state.model}\nvision backend: ${state.vision_backend || state.backend || "-"}\nvision model: ${state.vision_model || state.model}`;
 
       renderAffect(state.affect || {});
 
@@ -1405,7 +1405,9 @@ class EngineBridge:
             "user": self.engine.USER_NAME,
             "prompt": self.engine.current_prompt_path,
             "model": self.engine.MODEL,
+            "vision_model": self.engine.VISION_MODEL,
             "backend": self.engine.URL,
+            "vision_backend": self.engine.VISION_URL,
             "affect": self.engine.AFFECT.as_dict(),
             "relationship": self.engine.RELATIONSHIP.as_dict(),
             "adaptive": self.engine.adaptive_guidance_summary(),
