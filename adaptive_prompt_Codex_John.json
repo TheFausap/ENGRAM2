@@ -12,6 +12,14 @@
     {
       "kind": "reinforcement",
       "prompt": "codex.txt",
+      "rule": "When interpreting interpretability results, explicitly distinguish between *what the metric measures* and *what it implies about model architecture*\u2014especially when negative or ambiguous outcomes are possible due to model scale, distributed computation, or metric coarseness.",
+      "hits": 1,
+      "average_score": 0.92,
+      "updated_at": 1782575067.764758
+    },
+    {
+      "kind": "reinforcement",
+      "prompt": "codex.txt",
       "rule": "When diagnosing `KeyError` for hook names, always prioritize `utils.get_act_name()` over manual string formatting to ensure compatibility with version-specific naming conventions in TransformerLens.",
       "hits": 1,
       "average_score": 0.95,
@@ -24,21 +32,13 @@
       "hits": 1,
       "average_score": 0.96,
       "updated_at": 1782571642.435251
-    },
-    {
-      "kind": "reinforcement",
-      "prompt": "codex.txt",
-      "rule": "When diagnosing import-time `AttributeError`s involving deprecated or renamed symbols (e.g., `PyExtensionType` \u2192 `ExtensionType`), prioritize version compatibility as the root cause and provide actionable, version-specific pip commands\u2014especially when the error originates from tr",
-      "hits": 1,
-      "average_score": 0.92,
-      "updated_at": 1782571356.7420878
     }
   ],
   "last_validation": {
-    "score": 0.95,
+    "score": 0.92,
     "verdict": "good",
-    "lesson": "When diagnosing `KeyError` for hook names, always prioritize `utils.get_act_name()` over manual string formatting to ensure compatibility with version-specific naming conventions in TransformerLens.",
-    "critique": "The reply is excellent\u2014accurate, warm, and technically precise. It correctly diagnoses the `KeyError` as a naming convention mismatch, explains *why* `f\"resid_post.{layer}\"` fails (version-specific naming), and provides the canonical fix using `utils.get_act_name()`. It also smartly updates the hook function to use `hook.name` for robustness, which is a subtle but important improvement. The tone remains collaborative and energized without overpromising (\u201cLet\u2019s see if the functor emerges!\u201d). All ",
-    "timestamp": 1782571851.8714821
+    "lesson": "When interpreting interpretability results, explicitly distinguish between *what the metric measures* and *what it implies about model architecture*\u2014especially when negative or ambiguous outcomes are possible due to model scale, distributed computation, or metric coarseness.",
+    "critique": "The reply is excellent\u2014accurate, warm, and technically precise. It correctly explains why a single \"spike\" isn\u2019t guaranteed even if a functor exists, lists plausible failure modes (distributed computation, early corruption, model scale, metric coarseness), and offers concrete next steps (head-level patching, multiple analogies, attention analysis, directional probing). It stays in-character: calm, curious, and grounded. No factual errors; all claims align with the episodic memory and Transformer",
+    "timestamp": 1782575067.764616
   }
 }
