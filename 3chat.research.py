@@ -53,6 +53,7 @@ VISION_BASIC_AUTH_USER = os.environ.get("ENGRAM_VISION_BASIC_AUTH_USER", BASIC_A
 VISION_BASIC_AUTH_PASSWORD = os.environ.get("ENGRAM_VISION_BASIC_AUTH_PASSWORD", BASIC_AUTH_PASSWORD)
 OLLAMA_URL = os.environ.get("ENGRAM_OLLAMA_URL", "http://localhost:11434").rstrip("/")
 _SERVED_MODELS_CACHE: dict[str, list[str]] = {}
+_SERVED_MODEL_RECORDS_CACHE: dict[str, list[dict]] = {}
 APP_SETTINGS_FILE = "app_settings.json"
 
 def load_app_settings():
@@ -266,7 +267,7 @@ def adaptive_guidance_summary() -> dict:
 
 ADAPTIVE_GUIDANCE = load_adaptive_guidance()
 
-TOOL_PROTOCOL_TOKENS = {
+MODEL_CONTROL_TOKENS = {
     "<｜tool▁calls▁begin｜>": "",
     "<｜tool▁calls▁end｜>": "",
     "<｜tool▁call▁begin｜>": "\n",
@@ -277,7 +278,18 @@ TOOL_PROTOCOL_TOKENS = {
     "<|tool_call_begin|>": "\n",
     "<|tool_call_end|>": "\n",
     "<|tool_sep|>": "\n",
+    "<|begin_of_text|>": "",
+    "<|end_of_text|>": "",
+    "<|start_header_id|>": "\n",
+    "<|end_header_id|>": "\n",
+    "<|eot_id|>": "\n",
 }
+MODEL_CONTROL_TOKEN_RE = re.compile(
+    r"<[|｜][^<>\n]{0,96}"
+    r"(?:tool|function|call|header|eot|begin_of_text|end_of_text|reserved_special_token)"
+    r"[^<>\n]{0,96}[|｜]>",
+    flags=re.IGNORECASE,
+)
 
 def infer_code_language(text: str) -> str:
     lowered = text.lower()
@@ -294,17 +306,23 @@ def infer_code_language(text: str) -> str:
     return "text"
 
 def normalize_tool_protocol_output(text: str) -> str:
-    """Recover readable content when a model leaks DeepSeek tool protocol tokens."""
-    if not text or not any(token in text for token in TOOL_PROTOCOL_TOKENS):
+    """Recover readable content when a model leaks chat/tool control tokens."""
+    if not text:
+        return ""
+    if (
+        not any(token in text for token in MODEL_CONTROL_TOKENS)
+        and not MODEL_CONTROL_TOKEN_RE.search(text)
+    ):
         return text or ""
 
     cleaned = text
-    for token, replacement in TOOL_PROTOCOL_TOKENS.items():
+    for token, replacement in MODEL_CONTROL_TOKENS.items():
         cleaned = cleaned.replace(token, replacement)
+    cleaned = MODEL_CONTROL_TOKEN_RE.sub("\n", cleaned)
     cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).strip()
 
     lines = cleaned.splitlines()
-    if lines and lines[0].strip().lower() in {"function", "tool", "python"}:
+    if lines and lines[0].strip().lower() in {"assistant", "user", "system", "function", "tool", "python"}:
         lines = lines[1:]
     payload = "\n".join(lines).strip()
     if not payload or "```" in payload:
@@ -897,10 +915,10 @@ def backend_credentials(base_url: str) -> tuple[str, str, str]:
         return VISION_API_KEY, VISION_BASIC_AUTH_USER, VISION_BASIC_AUTH_PASSWORD
     return API_KEY, BASIC_AUTH_USER, BASIC_AUTH_PASSWORD
 
-def list_served_models(force_refresh=False, base_url: str = "") -> list[str]:
+def list_served_model_records(force_refresh=False, base_url: str = "") -> list[dict]:
     base_url = (base_url or URL).rstrip("/")
-    if base_url in _SERVED_MODELS_CACHE and not force_refresh:
-        return list(_SERVED_MODELS_CACHE[base_url])
+    if base_url in _SERVED_MODEL_RECORDS_CACHE and not force_refresh:
+        return [dict(record) for record in _SERVED_MODEL_RECORDS_CACHE[base_url]]
 
     api_key, basic_user, basic_password = backend_credentials(base_url)
 
@@ -911,15 +929,75 @@ def list_served_models(force_refresh=False, base_url: str = "") -> list[str]:
     )
     response.raise_for_status()
     payload = response.json()
-    models = [
-        str(item.get("id", "")).strip()
+    records = [
+        dict(item)
         for item in payload.get("data", [])
         if isinstance(item, dict) and str(item.get("id", "")).strip()
+    ]
+    if not records:
+        raise RuntimeError(f"No models were reported by {base_url}/models.")
+    _SERVED_MODEL_RECORDS_CACHE[base_url] = records
+    _SERVED_MODELS_CACHE[base_url] = [
+        str(record.get("id", "")).strip()
+        for record in records
+        if str(record.get("id", "")).strip()
+    ]
+    return [dict(record) for record in records]
+
+def list_served_models(force_refresh=False, base_url: str = "") -> list[str]:
+    base_url = (base_url or URL).rstrip("/")
+    if base_url in _SERVED_MODELS_CACHE and not force_refresh:
+        return list(_SERVED_MODELS_CACHE[base_url])
+
+    records = list_served_model_records(force_refresh=force_refresh, base_url=base_url)
+    models = [
+        str(record.get("id", "")).strip()
+        for record in records
+        if str(record.get("id", "")).strip()
     ]
     if not models:
         raise RuntimeError(f"No models were reported by {base_url}/models.")
     _SERVED_MODELS_CACHE[base_url] = models
     return list(models)
+
+def served_model_record(model: str = "", base_url: str = "") -> dict:
+    base_url = (base_url or URL).rstrip("/")
+    requested = model or MODEL
+    records = list_served_model_records(base_url=base_url)
+    matched = match_served_model(
+        requested,
+        [str(record.get("id", "")).strip() for record in records],
+    )
+    if not matched:
+        return {}
+    return next(
+        (record for record in records if str(record.get("id", "")).strip() == matched),
+        {},
+    )
+
+def infer_model_family(model: str = "", metadata: dict | None = None) -> str:
+    metadata = metadata or {}
+    fields = [
+        model,
+        metadata.get("id", ""),
+        metadata.get("root", ""),
+        metadata.get("owned_by", ""),
+        metadata.get("parent", ""),
+    ]
+    lowered = " ".join(str(field).lower() for field in fields if field)
+    family_markers = (
+        ("llama", ("llama", "meta-llama")),
+        ("qwen", ("qwen",)),
+        ("deepseek", ("deepseek",)),
+        ("mistral", ("mistral", "mixtral", "pixtral")),
+        ("gemma", ("gemma",)),
+        ("phi", ("phi-", "phi3", "phi4")),
+        ("gpt", ("gpt-", "openai")),
+    )
+    for family, markers in family_markers:
+        if any(marker in lowered for marker in markers):
+            return family
+    return "unknown"
 
 def match_served_model(requested: str, served_models: list[str]) -> str | None:
     if not served_models:
@@ -1072,11 +1150,11 @@ def image_backend_failure_message(exc: Exception, active_model: str, backend_url
     ]
     if not model_name_suggests_vision(active_model):
         hints.append(
-            "This model name does not look vision-capable. A text/code model such as "
-            "Qwen3-Coder can answer normally in vLLM but reject image_url payloads."
+            "This model name does not look vision-capable. A text/code model can answer "
+            "normally through the backend while still rejecting image_url payloads."
         )
     hints.append(
-        "Serve a vision model in vLLM, for example a Qwen-VL/LLaVA/Pixtral-style model, "
+        "Serve a vision-capable model through an OpenAI-compatible backend, "
         "then set ENGRAM_VISION_BASE_URL and ENGRAM_VISION_MODEL to that server and model id."
     )
     hints.append(f"Backend error: {details}")

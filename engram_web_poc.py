@@ -103,8 +103,8 @@ def normalize_model_markdown(text: str) -> str:
     return "\n".join(normalized)
 
 def normalize_tool_protocol_markup(text: str) -> str:
-    """Renderer fallback for leaked DeepSeek tool-call control tokens."""
-    tool_tokens = {
+    """Renderer fallback for leaked chat/tool control tokens."""
+    control_tokens = {
         "<｜tool▁calls▁begin｜>": "",
         "<｜tool▁calls▁end｜>": "",
         "<｜tool▁call▁begin｜>": "\n",
@@ -115,17 +115,29 @@ def normalize_tool_protocol_markup(text: str) -> str:
         "<|tool_call_begin|>": "\n",
         "<|tool_call_end|>": "\n",
         "<|tool_sep|>": "\n",
+        "<|begin_of_text|>": "",
+        "<|end_of_text|>": "",
+        "<|start_header_id|>": "\n",
+        "<|end_header_id|>": "\n",
+        "<|eot_id|>": "\n",
     }
-    if not any(token in text for token in tool_tokens):
+    control_token_re = re.compile(
+        r"<[|｜][^<>\n]{0,96}"
+        r"(?:tool|function|call|header|eot|begin_of_text|end_of_text|reserved_special_token)"
+        r"[^<>\n]{0,96}[|｜]>",
+        flags=re.IGNORECASE,
+    )
+    if not any(token in text for token in control_tokens) and not control_token_re.search(text):
         return text
 
     cleaned = text
-    for token, replacement in tool_tokens.items():
+    for token, replacement in control_tokens.items():
         cleaned = cleaned.replace(token, replacement)
+    cleaned = control_token_re.sub("\n", cleaned)
     cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).strip()
 
     lines = cleaned.splitlines()
-    if lines and lines[0].strip().lower() in {"function", "tool", "python"}:
+    if lines and lines[0].strip().lower() in {"assistant", "user", "system", "function", "tool", "python"}:
         lines = lines[1:]
     payload = "\n".join(lines).strip()
     if not payload or "```" in payload:
@@ -950,7 +962,7 @@ HTML = r"""<!doctype html>
     function renderState(state) {
       window.characterName = state.character || "Assistant";
       document.getElementById("subtitle").textContent = `${state.character} with ${state.user}`;
-      document.getElementById("identity").textContent = `character: ${state.character}\nuser: ${state.user}\nprompt: ${state.prompt}\nbackend: ${state.backend || "-"}\nmodel: ${state.model}\nvision backend: ${state.vision_backend || state.backend || "-"}\nvision model: ${state.vision_model || state.model}`;
+      document.getElementById("identity").textContent = `character: ${state.character}\nuser: ${state.user}\nprompt: ${state.prompt}\nbackend: ${state.backend || "-"}\nmodel: ${state.model}\nmodel family: ${state.model_family || "unknown"}\nvision backend: ${state.vision_backend || state.backend || "-"}\nvision model: ${state.vision_model || state.model}\nvision family: ${state.vision_model_family || "unknown"}`;
 
       renderAffect(state.affect || {});
 
@@ -1411,12 +1423,28 @@ class EngineBridge:
             "semantic": self.engine.semantic.count(),
             "procedural": self.engine.procedural.count(),
         }
+        try:
+            model_record = self.engine.served_model_record(self.engine.MODEL, self.engine.URL)
+        except Exception:
+            model_record = {}
+        try:
+            vision_model_record = self.engine.served_model_record(
+                self.engine.VISION_MODEL,
+                self.engine.VISION_URL,
+            )
+        except Exception:
+            vision_model_record = {}
         state = {
             "character": self.engine.CHAR_NAME,
             "user": self.engine.USER_NAME,
             "prompt": self.engine.current_prompt_path,
             "model": self.engine.MODEL,
+            "model_family": self.engine.infer_model_family(self.engine.MODEL, model_record),
             "vision_model": self.engine.VISION_MODEL,
+            "vision_model_family": self.engine.infer_model_family(
+                self.engine.VISION_MODEL,
+                vision_model_record,
+            ),
             "backend": self.engine.URL,
             "vision_backend": self.engine.VISION_URL,
             "pending_visual_observations": len(self.engine.PENDING_VISUAL_OBSERVATIONS),

@@ -73,7 +73,7 @@ The file depends on several external tools and libraries:
 
 - **OpenAI-compatible model server**: The main chat backend can be vLLM, LM Studio, or another compatible server. It defaults to `http://localhost:8000/v1` and can be changed with `ENGRAM_BASE_URL`.
 - **Separate vision backend**: Image analysis can use a different OpenAI-compatible server through `ENGRAM_VISION_BASE_URL`. This is useful when the main GPU server is fully occupied by a coder model and a vision model must run elsewhere.
-- **Automatic model discovery**: ENGRAM reads `/v1/models` and uses the exact model identifier reported by the backend. `ENGRAM_MODEL` may select a particular chat model when the server exposes more than one. `ENGRAM_VISION_MODEL` may select a particular vision model on the vision backend.
+- **Automatic model discovery**: ENGRAM reads `/v1/models` and uses the exact model identifier reported by the backend. `ENGRAM_MODEL` may select a particular chat model when the server exposes more than one. `ENGRAM_VISION_MODEL` may select a particular vision model on the vision backend. The UI also infers a broad model family from backend metadata for diagnostics, while request payloads remain model-neutral.
 - **Ollama**: There is a separate function for Ollama at `http://localhost:11434`, though the main chat path uses the OpenAI-compatible backend.
 - **ChromaDB**: Stores long-term memories in a local vector database.
 - **Sentence Transformers**: Converts text into numerical representations so memories can be searched by meaning, not only by exact words.
