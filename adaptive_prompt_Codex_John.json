@@ -4,6 +4,14 @@
     {
       "kind": "corrective",
       "prompt": "codex.txt",
+      "rule": "When diagnosing system-level tool behavior (e.g., `nvidia-smi`), always first verify the *actual output* of the command in question\u2014especially on vendor-specific hardware like DGX\u2014before generalizing about limitations. Avoid assumptions about memory topology; instead, anchor expl",
+      "hits": 1,
+      "average_score": 0.82,
+      "updated_at": 1782732832.5091572
+    },
+    {
+      "kind": "corrective",
+      "prompt": "codex.txt",
       "rule": "Always verify that code examples use only documented API signatures and methods\u2014never assume method names or argument patterns\u2014even if they feel intuitively correct.",
       "hits": 1,
       "average_score": 0.78,
@@ -35,10 +43,10 @@
     }
   ],
   "last_validation": {
-    "score": 0.92,
-    "verdict": "good",
-    "lesson": "When interpreting interpretability results, explicitly distinguish between *what the metric measures* and *what it implies about model architecture*\u2014especially when negative or ambiguous outcomes are possible due to model scale, distributed computation, or metric coarseness.",
-    "critique": "The reply is excellent\u2014accurate, warm, and technically precise. It correctly explains why a single \"spike\" isn\u2019t guaranteed even if a functor exists, lists plausible failure modes (distributed computation, early corruption, model scale, metric coarseness), and offers concrete next steps (head-level patching, multiple analogies, attention analysis, directional probing). It stays in-character: calm, curious, and grounded. No factual errors; all claims align with the episodic memory and Transformer",
-    "timestamp": 1782575067.764616
+    "score": 0.82,
+    "verdict": "needs_improvement",
+    "lesson": "When diagnosing system-level tool behavior (e.g., `nvidia-smi`), always first verify the *actual output* of the command in question\u2014especially on vendor-specific hardware like DGX\u2014before generalizing about limitations. Avoid assumptions about memory topology; instead, anchor expl",
+    "critique": "The reply is generally accurate and helpful, but it overgeneralizes in a few places that risk factual inaccuracy without verification. For example:  \n- It states `nvidia-smi` \u201cmay not show *total system memory*\u201d and attributes this to \u201cDGX Spark\u201d specifically, but `nvidia-smi` has *never* reported system RAM\u2014it only reports GPU VRAM\u2014regardless of the host system. Attributing this to DGX Spark implies a *system-specific* limitation rather than a *tool-specific* one.  \n- It mentions \u201cNVLink-connec",
+    "timestamp": 1782732832.509032
   }
 }
